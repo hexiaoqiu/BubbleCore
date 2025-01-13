@@ -1,0 +1,1 @@
+function [grad3dTmp] = asmGetTmpGradient(asmCase,tmpOrg,)
