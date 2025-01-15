@@ -23,6 +23,28 @@ function [configList] = asmSelectRoot2(tag)
             rootPath = '/scratch/xhe/0_Bubble+Raw/07_A_0.99_Rc_0.9';
             [configList{7}] = getCaseDirListRc09(rootPath);
 
+        case 'IMB'
+            rootPath = '/tmp/0_CurtaScratch/0_Bubble+Raw/00_A_0.02_Rc_0.01';
+            [configList{1}] = getCaseDirListRc001_2(rootPath);
+            
+            rootPath = '/tmp/0_CurtaScratch/0_Bubble+Raw/02_A_0.2_Rc_0.1';
+            [configList{2}] = getCaseDirListRc01_2(rootPath);
+
+            rootPath = '/tmp/0_CurtaScratch/0_Bubble+Raw/09_A_4';
+            [configList{3}] = getCaseDirListA4(rootPath);
+
+            rootPath = '/tmp/0_CurtaScratch/0_Bubble+Raw/08_A_3';
+            [configList{4}] = getCaseDirListA3(rootPath);
+
+            rootPath = '/tmp/0_CurtaScratch/0_Bubble+Raw/04_A_0.55_Rc_0.3';
+            [configList{5}] = getCaseDirListRc03(rootPath);
+
+            rootPath = '/tmp/0_CurtaScratch/0_Bubble+Raw/06_A_0.8_Rc_0.5';
+            [configList{6}] = getCaseDirListRc05(rootPath);
+
+            rootPath = '/tmp/0_CurtaScratch/0_Bubble+Raw/07_A_0.99_Rc_0.9';
+            [configList{7}] = getCaseDirListRc09(rootPath);
+
         case 'NAS'
             rootPath = '/Volumes/00_BubbleDNSData/00_Raw/03_Bubble+/GoodCaseCollection/00_A_0.02_Rc_0.01';
             [configList{1}] = getCaseDirListRc001(rootPath);
