@@ -3,25 +3,25 @@ function [ok] = asmShowNsTmp( varargin )
     maxArgs = 4;
     narginchk(minArgs,maxArgs);
     if nargin == 3
-        thisAsm = varargin{1};
+        ns = varargin{1};
         savePic = varargin{2};
         onlySavedIdx = varargin{3};
     elseif nargin == 2
-        thisAsm = varargin{1};
+        ns = varargin{1};
         savePic = varargin{2};
         onlySavedIdx = true;
     elseif nargin == 1
-        thisAsm = varargin{1};
+        ns = varargin{1};
         savePic = false;
         onlySavedIdx = true;
     elseif nargin == 4
-        thisAsm = varargin{1};
+        ns = varargin{1};
         savePic = varargin{2};
         onlySavedIdx = varargin{3};
         picPath = varargin{4};
     end
     
-    [asmTime,nsTest{1},nsTest{2},nsTest{3},nsTest{4}] = asmFusionNsTest(thisAsm,onlySavedIdx);
+    [asmTime,nsTest{1},nsTest{2},nsTest{3},nsTest{4}] = asmFusionNsTest(ns,onlySavedIdx);
 
 
     LineWidth = 4;
@@ -57,9 +57,11 @@ function [ok] = asmShowNsTmp( varargin )
     ylim([0,1.1*max(y,[],'all')])
     % ylim([min(cell2mat(nsTest),[],'all')*1.05,max(cell2mat(nsTest),[],'all')*1.2])
     xlabel('$t$','interpreter','latex','FontSize',labelFontSize)
+    xlim([0,max(x,[],'all')])
+    xticks(0:100:max(x,[],'all'))
     
     % title
-    figTitle = asmGetPlotTitle(thisAsm);
+    figTitle = asmGetPlotTitle(ns);
     title(figTitle,'interpreter','latex','FontSize',titleFontSize);
     
     
@@ -69,7 +71,7 @@ function [ok] = asmShowNsTmp( varargin )
     
     % save config
     if savePic == true
-        caseName = asmGetSaveName(thisAsm);
+        caseName = asmGetSaveName(ns);
         suffix = char(datetime("now","Format","uuuu-MM-dd"));
         fileName = ['NsTmp_',caseName,'_',suffix];
         fileNameFull = [fileName,'.png'];

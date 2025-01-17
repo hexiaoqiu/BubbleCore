@@ -9,8 +9,8 @@ function [configList] = getCaseDirListA3(rootPath)
         '1_RaBubble_1E7/1_1_256/';
     configList(2).caseDir{2} = ...
         '1_RaBubble_1E7/1_2_512/';
-    % configList(2).caseDir{3} = ...
-    % 'Ra3e7_r_c_0.9/00_3_1024/';
+    configList(2).caseDir{3} = ...
+        '1_RaBubble_1E7/1_3_512/';
     
     
     for idxConfig = 1:numel(configList)
