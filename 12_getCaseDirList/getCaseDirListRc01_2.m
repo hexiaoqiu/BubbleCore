@@ -13,7 +13,6 @@ function [configList] = getCaseDirListRc01_2(rootPath)
         fullfile(folderName,'00_1_256/');
     configList(n).caseDir{2} = ...
         fullfile(folderName,'00_2_512/');
-        'Ra3e3_r_c_0.1/00_2_512/';
 
     n = n + 1;
     folderName = '3_Ra9e3';

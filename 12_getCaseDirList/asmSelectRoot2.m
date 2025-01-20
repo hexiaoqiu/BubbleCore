@@ -5,31 +5,31 @@ function [configList] = asmSelectRoot2(tag)
             root = '/scratch/xhe/0_Bubble+Raw';
             
             folderName = '01_A_50_Rc_0.01';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{1}] = getCaseDirListRc001_2(path);
             
             folderName = '02_A_5_Rc_0.1';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{2}] = getCaseDirListRc01_2(path);
             
             folderName = '03_A_4';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{3}] = getCaseDirListA4(path);
 
             folderName = '04_A_3';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{4}] = getCaseDirListA3(path);
             
             folderName = '05_A_1.82_Rc_0.3';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{5}] = getCaseDirListRc03(path);
 
             folderName = '06_A_1.25_Rc_0.5';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{6}] = getCaseDirListRc05(path);
 
             folderName = '07_A_1_Rc_0.9';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{7}] = getCaseDirListRc09(path);
 
         case 'IMB'
@@ -58,7 +58,7 @@ function [configList] = asmSelectRoot2(tag)
             root = '/Volumes/00_BubbleDNSData/00_Raw/03_Bubble+/GoodCaseCollection';
             
             folderName = '00_A_50_Rc_0.01';
-            path = fullpath(root,folderName);
+            path = fullfile(root,folderName);
             [configList{1}] = getCaseDirListRc001_2(path);
             
             path = '/tmp/0_CurtaScratch/0_Bubble+Raw/02_A_0.2_Rc_0.1';

@@ -31,7 +31,7 @@ function [configList] = getCaseDirListRc001_2(rootPath)
         fullfile(folderName,'1_3_1536');
     
     n = n + 1;
-    folderName = '4_Ra4e3';
+    folderName = '4_Ra3e4';
     configList(n).caseDir{1} = ...
         fullfile(folderName,'00_1_256');
     configList(n).caseDir{2} = ...
