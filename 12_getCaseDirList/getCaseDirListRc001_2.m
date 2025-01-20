@@ -7,88 +7,95 @@ function [configList] = getCaseDirListRc001_2(rootPath)
         fullfile(folderName,'1_2_1536/');
     
     n = n + 1;
+    folderName = '2_Ra3e3';
     configList(n).caseDir{1} = ...
-        '1_Ra3e3/00_1_256/';
+        fullfile(folderName,'00_1_256');
     configList(n).caseDir{2} = ...
-        '1_Ra3e3/00_2_1024/';
+        fullfile(folderName,'00_2_1024');
     configList(n).caseDir{3} = ...
-        'Ra3e3_r_c_/00_3_iniTmp0_1024/';
+        fullfile(folderName,'00_3_1024');
     configList(n).caseDir{4} = ...
-        'Ra3e3_r_c_0.01/00_4_1024/';
+        fullfile(folderName,'00_4_1024');
     configList(n).caseDir{5} = ...
-        'Ra3e3_r_c_0.01/00_5_1536/';
+        fullfile(folderName,'00_5_1536');
     configList(n).caseDir{6} = ...
-        'Ra3e3_r_c_0.01/00_6_2048/';
+        fullfile(folderName,'00_6_2048');
     
     n = n + 1;
+    folderName = '3_Ra9e3';
     configList(n).caseDir{1} = ...
-        'Ra9e3/1_1_256/';
+        fullfile(folderName,'1_1_256');
     configList(n).caseDir{2} = ...
-        'Ra9e3/1_2_1536/';
+        fullfile(folderName,'1_2_1536');
     configList(n).caseDir{3} = ...
-        'Ra9e3/1_3_1536/';
+        fullfile(folderName,'1_3_1536');
     
     n = n + 1;
+    folderName = '4_Ra4e3';
     configList(n).caseDir{1} = ...
-        'Ra3e4_r_c_0.01/00_1_iniTmp0_256/';
+        fullfile(folderName,'00_1_256');
     configList(n).caseDir{2} = ...
-        'Ra3e4_r_c_0.01/00_2_iniTmp0_1024/';
+        fullfile(folderName,'00_2_1024');
     configList(n).caseDir{3} = ...
-        'Ra3e4_r_c_0.01/00_3_iniTmp0_1024/';
+        fullfile(folderName,'00_3_1024');
     configList(n).caseDir{4} = ...
-        'Ra3e4_r_c_0.01/00_4_1024/';
+        fullfile(folderName,'00_4_1024');
     configList(n).caseDir{5} = ...
-        'Ra3e4_r_c_0.01/00_5_1536/';
+        fullfile(folderName,'00_5_1536');
     configList(n).caseDir{6} = ...
-        'Ra3e4_r_c_0.01/00_6_2048/';
+        fullfile(folderName,'00_6_2048');
 
     n = n + 1;
+    folderName = '5_Ra9e4';
     configList(n).caseDir{1} = ...
-        'Ra9e4/1_1_256/';
+        fullfile(folderName,'1_1_256');
     configList(n).caseDir{2} = ...
-        'Ra9e4/1_2_256/';
+        fullfile(folderName,'1_2_256');
     configList(n).caseDir{3} = ...
-        'Ra9e4/1_3_2048/';
+        fullfile(folderName,'1_3_2048');
     
     n = n + 1;
+    folderName = '6_Ra3e5';
     configList(n).caseDir{1} = ...
-        'Ra3e5_r_c_0.01/00_1_iniTmp0_256/';
+        fullfile(folderName,'00_1_256');
     configList(n).caseDir{2} = ...
-        'Ra3e5_r_c_0.01/00_2_iniTmp0_512/';
+        fullfile(folderName,'00_2_512');
     configList(n).caseDir{3} = ...
-        'Ra3e5_r_c_0.01/00_3_iniTmp0_1024/';
+        fullfile(folderName,'00_3_1024');
     configList(n).caseDir{4} = ...
-        'Ra3e5_r_c_0.01/00_4_iniTmp0_1024/';
+        fullfile(folderName,'00_4_1024');
     configList(n).caseDir{5} = ...
-        'Ra3e5_r_c_0.01/00_5_1024/';
+        fullfile(folderName,'00_5_1024');
     configList(n).caseDir{6} = ...
-        'Ra3e5_r_c_0.01/00_6_1536/';
+        fullfile(folderName,'00_6_1536');
     configList(n).caseDir{7} = ...
-        'Ra3e5_r_c_0.01/00_7_1536/';
+        fullfile(folderName,'00_7_1536');
 
     n = n + 1;
+    folderName = '7_Ra9e5';
     configList(n).caseDir{1} = ...
-        'Ra9e5/1_1_256/';
+        fullfile(folderName,'1_1_256');
     configList(n).caseDir{2} = ...
-        'Ra9e5/1_2_256/';
+        fullfile(folderName,'1_2_256');
     configList(n).caseDir{3} = ...
-        'Ra9e5/1_3_1536/';
+        fullfile(folderName,'1_3_1536');
     
     n = n + 1;
+    folderName = '8_Ra3e6';
     configList(n).caseDir{1} = ...
-    'Ra3e6/04_1_Ra3e6_r_c_0.01_iniTmp0_1024/';
+        fullfile(folderName,'04_1_1024');
     configList(n).caseDir{2} = ...
-    'Ra3e6/04_2_Ra3e6_r_c_0.01_iniTmp0_1024/';
+        fullfile(folderName,'04_2_1024');
     configList(n).caseDir{3} = ...
-    'Ra3e6/04_3_Ra3e6_r_c_0.01_iniTmp0_1024/';
+        fullfile(folderName,'04_3_1024');
     configList(n).caseDir{4} = ...
-    'Ra3e6/04_4_Ra3e6_r_c_0.01_iniTmp0_1024/';
+        fullfile(folderName,'04_4_1024');
     configList(n).caseDir{5} = ...
-        'Ra3e6/04_5_1536/';
+        fullfile(folderName,'04_5_1536');
     configList(n).caseDir{6} = ...
-        'Ra3e6/04_6_1536/';
+        fullfile(folderName,'04_6_1536');
     configList(n).caseDir{7} = ...
-        'Ra3e6/04_7_1536/';
+        fullfile(folderName,'04_7_1536');
 
 
     % configList(n).caseDir{1} = ...

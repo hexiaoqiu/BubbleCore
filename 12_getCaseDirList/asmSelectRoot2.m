@@ -2,25 +2,34 @@ function [configList] = asmSelectRoot2(tag)
     configList = cell(1);
     switch tag
         case 'curta'
-            path = '/scratch/xhe/0_Bubble+Raw/00_A_0.02_Rc_0.01';
+            root = '/scratch/xhe/0_Bubble+Raw';
+            
+            folderName = '01_A_50_Rc_0.01';
+            path = fullpath(root,folderName);
             [configList{1}] = getCaseDirListRc001_2(path);
             
-            path = '/scratch/xhe/0_Bubble+Raw/02_A_0.2_Rc_0.1';
+            folderName = '02_A_5_Rc_0.1';
+            path = fullpath(root,folderName);
             [configList{2}] = getCaseDirListRc01_2(path);
-
-            path = '/scratch/xhe/0_Bubble+Raw/09_A_4';
+            
+            folderName = '03_A_4';
+            path = fullpath(root,folderName);
             [configList{3}] = getCaseDirListA4(path);
 
-            path = '/scratch/xhe/0_Bubble+Raw/08_A_3';
+            folderName = '04_A_3';
+            path = fullpath(root,folderName);
             [configList{4}] = getCaseDirListA3(path);
-
-            path = '/scratch/xhe/0_Bubble+Raw/04_A_0.55_Rc_0.3';
+            
+            folderName = '05_A_1.82_Rc_0.3';
+            path = fullpath(root,folderName);
             [configList{5}] = getCaseDirListRc03(path);
 
-            path = '/scratch/xhe/0_Bubble+Raw/06_A_0.8_Rc_0.5';
+            folderName = '06_A_1.25_Rc_0.5';
+            path = fullpath(root,folderName);
             [configList{6}] = getCaseDirListRc05(path);
 
-            path = '/scratch/xhe/0_Bubble+Raw/07_A_0.99_Rc_0.9';
+            folderName = '07_A_1_Rc_0.9';
+            path = fullpath(root,folderName);
             [configList{7}] = getCaseDirListRc09(path);
 
         case 'IMB'
