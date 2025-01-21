@@ -57,20 +57,16 @@ function [asmCase] = setAsmCase(varargin)
     % tiled bubble
     asmCase.Delta = Delta;
     % frozen top bubble
-    if ~isnan(r_c)
-        asmCase.r_c = r_c;
-        asmCase.theta_c = atan(r_c)*2;
-        asmCase.theta_c_deg = rad2deg(asmCase.theta_c);
-        asmCase.H = pi/2 - asmCase.theta_c;
-        asmCase.W = (2*pi)/asmCase.H;
-        asmCase.A = 1/sin(asmCase.theta_c);
-        asmCase.realRa = asmCase.Ra*(asmCase.H)^3;
-    end
+    asmCase.r_c = r_c;
+    asmCase.theta_c = atan(r_c)*2;
+    asmCase.theta_c_deg = rad2deg(asmCase.theta_c);
+    asmCase.H = pi/2 - asmCase.theta_c;
+    asmCase.W = (2*pi)/asmCase.H;
+    asmCase.A = 1/sin(asmCase.theta_c);
+    asmCase.realRa = asmCase.Ra*(asmCase.H)^3;
     % vibration bubble
-    if ~isnan(Amp_vib)
-        asmCase.Amp_vib = Amp_vib;
-        asmCase.Omega_vib = Omega_vib;
-    end
+    asmCase.Amp_vib = Amp_vib;
+    asmCase.Omega_vib = Omega_vib;
     
     
     % computational parameters invariant
