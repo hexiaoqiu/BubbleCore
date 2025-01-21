@@ -46,19 +46,33 @@ function [asmCase] = setAsmCase(varargin)
     [Ra, Pr, St, R0, Ff, Delta,x2dGauche, x2dDroit, y2dBas, y2dHaut, n1, n2, maxN,dt,dtSave] ...,
     = getCoefs(asmCase.subCaseDir{1});
     [r_c, dissipType,~] = getDissip(asmCase.subCaseDir{1});
+    [Amp_vib, Omega_vib] = getVibration(asmCase.subCaseDir{1});
 
     % physical parameters
+    % ogirin parameters
     asmCase.Ra = Ra;
     asmCase.Pr = Pr;
+    % rotation bubble
     asmCase.invRo = R0;
+    % tiled bubble
     asmCase.Delta = Delta;
-    asmCase.r_c = r_c;
-    asmCase.theta_c = atan(r_c)*2;
-    asmCase.theta_c_deg = rad2deg(asmCase.theta_c);
-    asmCase.H = pi/2 - asmCase.theta_c;
-    asmCase.W = (2*pi)/asmCase.H;
-    asmCase.A = 1/sin(asmCase.theta_c);
-    asmCase.realRa = asmCase.Ra*(asmCase.H)^3;
+    % frozen top bubble
+    if ~isnan(r_c)
+        asmCase.r_c = r_c;
+        asmCase.theta_c = atan(r_c)*2;
+        asmCase.theta_c_deg = rad2deg(asmCase.theta_c);
+        asmCase.H = pi/2 - asmCase.theta_c;
+        asmCase.W = (2*pi)/asmCase.H;
+        asmCase.A = 1/sin(asmCase.theta_c);
+        asmCase.realRa = asmCase.Ra*(asmCase.H)^3;
+    end
+    % vibration bubble
+    if ~isnan(Amp_vib)
+        asmCase.Amp_vib = Amp_vib;
+        asmCase.Omega_vib = Omega_vib;
+    end
+    
+    
     % computational parameters invariant
     asmCase.x2dGauche = x2dGauche;
     asmCase.x2dDroit = x2dDroit;
