@@ -1,12 +1,12 @@
 function [configList] = getCaseDirListRc001_2(rootPath)
     n = 1;
-    folderName = '1_Ra9e2';
-    configList(n).caseDir{1} = ...
-        fullfile(folderName,'1_1_256/');
-    configList(n).caseDir{2} = ...
-        fullfile(folderName,'1_2_1536/');
-    
-    n = n + 1;
+    % folderName = '1_Ra9e2';
+    % configList(n).caseDir{1} = ...
+    %     fullfile(folderName,'1_1_256/');
+    % configList(n).caseDir{2} = ...
+    %     fullfile(folderName,'1_2_1536/');
+    % 
+    % n = n + 1;
     folderName = '2_Ra3e3';
     configList(n).caseDir{1} = ...
         fullfile(folderName,'00_1_256');
