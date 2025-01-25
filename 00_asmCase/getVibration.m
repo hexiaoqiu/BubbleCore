@@ -11,7 +11,7 @@ function [Amp_vib, Omega_vib] = getVibration(caseRawDir)
         Omega_vib = cache{1};
         fclose(fid);
     else
-        disp('No dissip.dat found! Skip it!');
+        % disp('No vibration.dat found! Not a vibration bubble DNS! Skip it!');
         Amp_vib = NaN;
         Omega_vib = NaN;
     end
