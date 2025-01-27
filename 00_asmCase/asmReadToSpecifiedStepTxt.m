@@ -39,10 +39,15 @@ function [tmpOrg, u2dOrg, v2dOrg, prsOrg] = asmReadToSpecifiedStepTxt(asmCase,lo
         if numel(cache{1}) ~= numFloatInOneTimeStep
             disp(['Fatal Fault! subCase: ',asmCase.subCaseDir{asmCase.readNowSubCaseIdx}])
             disp(['In the local time step idx: ',num2str(readIdx,'%g')])
-            disp('Data broken! Not enought floats in one step data!')
+            disp('Data broken before reaching the time step! Check the data file in:')
+            tmpOrg = [];
+            u2dOrg = []; 
+            v2dOrg = [];
+            prsOrg = [];
+            return
         else
             disp(['In subCase: ',asmCase.subCaseDir{asmCase.readNowSubCaseIdx}])
-            disp(['skipping the time step ',num2str(readIdx,'%d')])
+            disp(['skipping the time step ',num2str(readIdx,'%d'),'/',num2str(numTimeStepToSkip,'%d')])
         end
     end
 
