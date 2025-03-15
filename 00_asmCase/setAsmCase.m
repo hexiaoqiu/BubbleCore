@@ -26,21 +26,13 @@ function [asmCase] = setAsmCase(varargin)
     end
 
     % obtain the raw cases' coefficients and numbers
-    % disp('Start set up the assemble cases')
-    % disp('Obtaining the raw case lists:')
     asmCase.numSubCase = numel(subCaseDirList);
     asmCase.subCaseDir = subCaseDirList;
-    % for idxSubCase = 1:asmCase.numSubCase
-    %     disp(asmCase.subCaseDir{idxSubCase})
-    % end
 
     % get strings
-    % disp('Getting the string:')
     [IDGOM, IDSOLU] = getString(asmCase.subCaseDir{1});
     asmCase.IDGOM = IDGOM;
     asmCase.IDSOLU = IDSOLU;
-    % disp(asmCase.IDGOM)
-    % disp(asmCase.IDSOLU)
     
     % read parameters
     [Ra, Pr, St, R0, Ff, Delta,x2dGauche, x2dDroit, y2dBas, y2dHaut, n1, n2, maxN,dt,dtSave] ...,
@@ -67,6 +59,15 @@ function [asmCase] = setAsmCase(varargin)
     % vibration bubble
     asmCase.Amp_vib = Amp_vib;
     asmCase.Omega_vib = Omega_vib;
+    if ~isnan(asmCase.Amp_vib)
+        asmCase.theta_c = 0;
+        asmCase.theta_c_deg = 0;
+        asmCase.H = pi/2 - asmCase.theta_c;
+        asmCase.W = (2*pi)/asmCase.H;
+        asmCase.realRa = asmCase.Ra;
+        asmCase.r_c = 0;
+    end
+
     
     
     % computational parameters invariant
@@ -88,15 +89,15 @@ function [asmCase] = setAsmCase(varargin)
     while idxSubCase < asmCase.numSubCase
         idxSubCase = idxSubCase + 1;
 
-        % disp(['In subCase: ', asmCase.subCaseDir{idxSubCase}])
+        disp(['In subCase: ', asmCase.subCaseDir{idxSubCase}])
         if exist(fullfile(asmCase.subCaseDir{idxSubCase},'nssave.bin'),"file") == 2
             asmCase.type{idxSubCase} = 'bin';
             asmCase.dataFileName{idxSubCase} = 'nssave.bin';
-            % disp('Data is stored in binary form!')
+            disp('Data is stored in binary form!')
         elseif exist(fullfile(asmCase.subCaseDir{idxSubCase},'nssave.dat'),"file") == 2
             asmCase.type{idxSubCase} = 'txt';
             asmCase.dataFileName{idxSubCase} = 'nssave.dat';
-            % disp('Data is stored in texte form!')
+            disp('Data is stored in texte form!')
         else
             disp(['No data file is found in ',asmCase.subCaseDir{idxSubCase}])
             disp('Deleting it from the sub directory list!')
