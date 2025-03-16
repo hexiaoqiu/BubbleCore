@@ -63,6 +63,9 @@ function [asmCase] = setAsmCase(varargin)
         asmCase.H = pi/2;
         asmCase.W = 4;
         asmCase.realRa = asmCase.Ra;
+        asmCase.A = 0;
+        dissipType = 0;
+        r_c = 0;
     end
     % vibration bubble
     asmCase.Amp_vib = Amp_vib;
@@ -117,7 +120,11 @@ function [asmCase] = setAsmCase(varargin)
         for idxSubCase = 2:asmCase.numSubCase
             [Ra_2, Pr_2, St_2, R0_2, Ff_2, Delta_2, x2dGauche_2, x2dDroit_2, y2dBas_2, y2dHaut_2, n1_2, n2_2, maxN_2,dt_2,dtSave_2] ...,
             = getCoefs(asmCase.subCaseDir{idxSubCase});
-            [r_c_2, dissipType_2,delta_r_2] = getDissip(asmCase.subCaseDir{idxSubCase});
+            [r_c_2, dissipType_2,~] = getDissip(asmCase.subCaseDir{idxSubCase});
+            if isnan(r_c_2)
+                r_c_2 = 0;
+                dissipType_2 = 0;
+            end
     
             consistency = (Ra == Ra_2)&&(R0 == R0_2)&&(Pr == Pr_2)&&(Delta == Delta_2)&&(x2dGauche == x2dGauche_2) ...,
                         &&(x2dDroit == x2dDroit_2)&&(y2dBas == y2dBas_2)&&(y2dHaut == y2dHaut_2) ...,
