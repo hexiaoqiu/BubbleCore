@@ -56,18 +56,21 @@ function [asmCase] = setAsmCase(varargin)
     asmCase.W = (2*pi)/asmCase.H;
     asmCase.A = 1/sin(asmCase.theta_c);
     asmCase.realRa = asmCase.Ra*(asmCase.H)^3;
+    if isnan(asmCase.r_c)
+        asmCase.r_c = 0;
+        asmCase.theta_c = 0;
+        asmCase.theta_c_deg = 0;
+        asmCase.H = pi/2;
+        asmCase.W = 4;
+        asmCase.realRa = asmCase.Ra;
+    end
     % vibration bubble
     asmCase.Amp_vib = Amp_vib;
     asmCase.Omega_vib = Omega_vib;
-    if ~isnan(asmCase.Amp_vib)
-        asmCase.theta_c = 0;
-        asmCase.theta_c_deg = 0;
-        asmCase.H = pi/2 - asmCase.theta_c;
-        asmCase.W = (2*pi)/asmCase.H;
-        asmCase.realRa = asmCase.Ra;
-        asmCase.r_c = 0;
+    if isnan(asmCase.Omega_vib)
+        asmCase.Amp_vib = 0;
+        asmCase.Omega_vib = 0;
     end
-
     
     
     % computational parameters invariant
