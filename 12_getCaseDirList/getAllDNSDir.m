@@ -18,6 +18,8 @@ switch tag
         root = '/Volumes/G-DRIVE PRO/01_BubblePlus';
     case 'Silver16T'
         root = '/Volumes/ProNTFSDrive/disk4s2/03_Bubble+/GoodCaseCollection';
+    case 'curta'
+        root = '/scratch/xhe/0_Bubble+Raw/';
     otherwise
         disp('The choice of tag is:')
         disp('HDD NAS curta')
