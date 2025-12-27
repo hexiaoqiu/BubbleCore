@@ -1,3 +1,5 @@
+% 这个函数是通过signal的零点来寻找roll之间的边界
+% 
 function [interval] = lscFindInterval(x,signal)
     interval = struct('head',0,'rear',0,'headIdx',0,'rearIdx',0,'positive','true');
     length = numel(x);
