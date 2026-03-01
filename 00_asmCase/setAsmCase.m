@@ -11,7 +11,7 @@
 %   the cases in <caseRawDirList> should be sequenced 
 % **************************************************************************************************
 % Updates :
-%    
+%  2026/02/28: 将AmsCase改为dnsCase，命名更加清晰，相应函数代码迁移到setDnsCase  
 %   
 %   
 

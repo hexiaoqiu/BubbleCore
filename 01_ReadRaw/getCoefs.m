@@ -6,7 +6,9 @@
 % The data is stored in two levels directories:
 %       \DeltaXX\RaXXRoXX -> XX indicates the coefs.
 
-function [Ra, Pr, St, R0, Ff, Delta,x2dGauche, x2dDroit, y2dBas, y2dHaut, n1, n2, maxN,dt,dtSave] = getCoefs(caseRawDir)
+function [Ra, Pr, St, R0, Ff, Delta,...
+    x2dGauche, x2dDroit, y2dBas, y2dHaut,...
+    n1, n2, maxN,dt,dtSave] = getCoefs(caseRawDir)
     % locate the raw data file
     nsreadDir = fullfile(caseRawDir, 'nsread.dat');
     id = fopen(nsreadDir);
@@ -25,11 +27,15 @@ function [Ra, Pr, St, R0, Ff, Delta,x2dGauche, x2dDroit, y2dBas, y2dHaut, n1, n2
     y2dBas = coefs(3); % x2 bas
     y2dHaut = coefs(4); % x2 haut
 
-    % read resolutions
-    cache = textscan(id, '%f', 'HeaderLines', 6);
+    % read resolutions: taking Multi-Grid into Consideration
+    cache = textscan(id, '%f', 'HeaderLines', 5);
     coefs = cell2mat(cache);
-    n1 = coefs(1);
-    n2 = coefs(2);
+    numGrid = coefs(1);
+
+    cache = textscan(id, '%f', 'HeaderLines', 1);
+    coefs = cell2mat(cache);
+    n1 = coefs(1)*(2^(numGrid-1));
+    n2 = coefs(2)*(2^(numGrid-1));
 
     % read coefficients
     cache = textscan(id, '%f', 'HeaderLines', 5);
