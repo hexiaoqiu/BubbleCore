@@ -16,7 +16,7 @@
 %   
 %   
 
-function [dns] = setDnsCase(varargin)
+function [dns] = getDNS(varargin)
     
     narginchk(1,2);
     if nargin == 1

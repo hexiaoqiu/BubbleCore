@@ -44,8 +44,9 @@ function [ok] = asmShowNsTest( varargin )
     for i = 1:4
         x = asmTime;
         y = nsTest{i};
-        semilogy(x, y, ...,
-            lineShape{i},'LineWidth',LineWidth,'MarkerSize',MarkerSize,'MarkerIndice',1:markerInterval:length(y))
+        % semilogy(x, y, ...,
+        %     lineShape{i},'LineWidth',LineWidth,'MarkerSize',MarkerSize,'MarkerIndice',1:markerInterval:length(y))
+        semilogy(x, y,'LineWidth',LineWidth)
         hold on
     end
     legendText{1} = '$E_{\Omega}$';
