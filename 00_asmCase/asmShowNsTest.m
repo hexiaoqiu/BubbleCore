@@ -1,42 +1,37 @@
 function [ok] = asmShowNsTest( varargin )
     minArgs = 1;
-    maxArgs = 4;
+    maxArgs = 3;
     narginchk(minArgs,maxArgs);
     if nargin == 3
         thisAsm = varargin{1};
         savePic = varargin{2};
-        onlySavedIdx = varargin{3};
+        picPath = varargin{3};
     elseif nargin == 2
         thisAsm = varargin{1};
         savePic = varargin{2};
-        onlySavedIdx = true;
+        picPath = '.';
     elseif nargin == 1
         thisAsm = varargin{1};
         savePic = false;
-        onlySavedIdx = true;
-    elseif nargin == 4
-        thisAsm = varargin{1};
-        savePic = varargin{2};
-        onlySavedIdx = varargin{3};
-        picPath = varargin{4};
+        picPath = '.';
     end
-    
+    onlySavedIdx = false;
     [asmTime,nsTest{1},nsTest{2},nsTest{3},nsTest{4}] = asmFusionNsTest(thisAsm,onlySavedIdx);
 
 
     LineWidth = 2;
-    MarkerSize = 6;
+    % MarkerSize = 6;
     FontSize = 30;
     legendFontSize = 20;
     labelFontSize = 35;
     titleFontSize = 18;
     pOsItiON = [0,20,1024,768];
-    lineShape = {'r-s','k-o','b-^','m-s','-d','-p','-h','-+','-x','-v'};
-    if onlySavedIdx == true
-        markerInterval = 100;
-    else
-        markerInterval = 100000;
-    end
+    % lineShape = {'r-s','k-o','b-^','m-s','-d','-p','-h','-+','-x','-v'};
+    % if onlySavedIdx == true
+    %     markerInterval = 100;
+    % else
+    %     markerInterval = 100000;
+    % end
 
 
     fig_1 = figure();
@@ -49,10 +44,10 @@ function [ok] = asmShowNsTest( varargin )
         semilogy(x, y,'LineWidth',LineWidth)
         hold on
     end
-    legendText{1} = '$E_{\Omega}$';
-    legendText{2} = '$I_{\Omega}$';
-    legendText{3} = '$T_{\Omega}$';
-    legendText{4} = '$J_{\Omega}$';
+    legendText{1} = '$E_{k}$';
+    legendText{2} = '$E_{\omega}$';
+    legendText{3} = '$T$';
+    legendText{4} = '$J$';
     hold off
     
     % set global coef
