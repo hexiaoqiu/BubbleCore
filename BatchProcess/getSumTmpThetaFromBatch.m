@@ -1,4 +1,4 @@
-function [sumTmpTheta] = calcSumTmpThetaBatch(dns, batch, postMesh)
+function [sumTmpTheta] = getSumTmpThetaFromBatch(dns, batch, postMesh)
 %CALCSUMTMPTHETABATCH Interpolate tmp snapshots and sum their theta profiles.
 
     numSteps = batch.numSteps;
