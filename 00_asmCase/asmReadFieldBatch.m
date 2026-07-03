@@ -4,12 +4,13 @@ function [dns, batch] = asmReadFieldBatch(dns, readTime0, readTime1, maxNumSteps
 %   fieldList only controls which fields are kept in the returned batch.
 
     if nargin < 5 || isempty(fieldList)
-        fieldList = {'tmp', 'u2d', 'v2d', 'prs'};
+        fieldList = {'tmp', 'u2d', 'v2d', 'prs','vor'};
     end
     keepTmp = any(strcmp(fieldList, 'tmp'));
     keepU2d = any(strcmp(fieldList, 'u2d'));
     keepV2d = any(strcmp(fieldList, 'v2d'));
     keepPrs = any(strcmp(fieldList, 'prs'));
+    keepVor = any(strcmp(fieldList, 'vor'));
 
     if keepTmp
         batch.tmpOrg = cell(maxNumStepsPerBatch, 1);
@@ -22,6 +23,9 @@ function [dns, batch] = asmReadFieldBatch(dns, readTime0, readTime1, maxNumSteps
     end
     if keepPrs
         batch.prsOrg = cell(maxNumStepsPerBatch, 1);
+    end
+    if keepVor
+        batch.vorOrg = cell(maxNumStepsPerBatch, 1);
     end
 
     batch.time = zeros(maxNumStepsPerBatch, 1);
@@ -52,8 +56,20 @@ function [dns, batch] = asmReadFieldBatch(dns, readTime0, readTime1, maxNumSteps
         if keepPrs
             batch.prsOrg{counterStep} = prsOrg;
         end
+        if keepVor
+            batch.vorOrg{counterStep} = ...
+                computeVorOrgOneStep(...
+                dns.x2dGauche, ...
+                dns.x2dDroit, ...
+                dns.y2dBas, ...
+                dns.n1(dns.readNowSubCaseIdx), ...
+                dns.n2(dns.readNowSubCaseIdx), ...
+                u2dOrg,v2dOrg);
+        end
 
         batch.time(counterStep) = dns.lastReadTime;
+        [~,batch.idxGlobal(counterStep)] = ...
+            getClosestTimeStep(dns,batch.time(counterStep));
         batch.subCaseIdx(counterStep) = dns.readNowSubCaseIdx;
         batch.n1(counterStep) = dns.n1(dns.readNowSubCaseIdx);
         batch.n2(counterStep) = dns.n2(dns.readNowSubCaseIdx);
@@ -90,5 +106,8 @@ function [dns, batch] = asmReadFieldBatch(dns, readTime0, readTime1, maxNumSteps
     end
     if keepPrs
         batch.prsOrg = batch.prsOrg(1:counterStep);
+    end
+    if keepVor
+        batch.vorOrg = batch.vorOrg(1:counterStep);
     end
 end
