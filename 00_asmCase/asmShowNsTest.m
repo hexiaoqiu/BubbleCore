@@ -2,9 +2,9 @@ function [ok] = asmShowNsTest(varargin)
 %ASMSHOWNSTEST Plot fused NS test quantities from an ASM/DNS case.
 %
 % Usage:
-%   asmShowNsTest(thisAsm)
-%   asmShowNsTest(thisAsm, savePic)
-%   asmShowNsTest(thisAsm, savePic, picPath)
+%   asmShowNsTest(dns)
+%   asmShowNsTest(dns, savePic)
+%   asmShowNsTest(dns, savePic, picPath)
 %
 % The nstest file has five columns:
 %   1. time
@@ -23,15 +23,15 @@ function [ok] = asmShowNsTest(varargin)
     narginchk(minArgs, maxArgs);
 
     if nargin == 3
-        thisAsm = varargin{1};
+        dns = varargin{1};
         savePic = varargin{2};
         picPath = varargin{3};
     elseif nargin == 2
-        thisAsm = varargin{1};
+        dns = varargin{1};
         savePic = varargin{2};
         picPath = '.';
     else
-        thisAsm = varargin{1};
+        dns = varargin{1};
         savePic = false;
         picPath = '.';
     end
@@ -39,7 +39,7 @@ function [ok] = asmShowNsTest(varargin)
     onlySavedIdx = false;
 
     [asmTime, nsTest{1}, nsTest{2}, nsTest{3}, nsTest{4}] = ...
-        asmFusionNsTest(thisAsm, onlySavedIdx);
+        asmFusionNsTest(dns, onlySavedIdx);
 
     if isempty(asmTime)
         warning('asmShowNsTest:NoValidData', ...
@@ -75,6 +75,12 @@ function [ok] = asmShowNsTest(varargin)
     legendText{3} = '$T$';
     legendText{4} = '$J$';
 
+    for i = 1:dns.numSubCase-1
+        y = 0.0001:1:1000;
+        x = ones(size(y))*dns.endTime(i);
+        semilogy(x, y, ':r', 'LineWidth', LineWidth);
+    end
+
     hold off;
 
     set(gca, 'FontSize', FontSize);
@@ -97,7 +103,7 @@ function [ok] = asmShowNsTest(varargin)
         'interpreter', 'latex', ...
         'FontSize', labelFontSize);
 
-    figTitle = asmGetPlotTitle(thisAsm);
+    figTitle = asmGetPlotTitle(dns);
     title(figTitle, ...
         'interpreter', 'latex', ...
         'FontSize', titleFontSize);
@@ -110,7 +116,7 @@ function [ok] = asmShowNsTest(varargin)
             mkdir(picPath);
         end
 
-        caseName = asmGetSaveName(thisAsm);
+        caseName = asmGetSaveName(dns);
         suffix = char(datetime("now", "Format", "uuuu-MM-dd-hh-mm"));
         fileName = ['NsTest_', caseName, '_', suffix];
         fileNameFull = [fileName, '.png'];
