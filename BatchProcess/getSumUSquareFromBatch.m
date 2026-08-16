@@ -1,14 +1,14 @@
 function [sumUSqure, sumUphiSquare, sumVthetaSquare] = ...,
-    getSumUSquareFromBatch(dns, batch, postMesh)
+    getSumUSquareFromBatch(dns, batch, workMesh)
 %CALCSUMTMPTHETABATCH Interpolate tmp snapshots and sum their theta profiles.
 
     numSteps = batch.numSteps;
-    nTheta = postMesh.nTheta;
-    nPhi = postMesh.nPhi;
-    x2d = postMesh.x2d;
-    y2d = postMesh.y2d;
-    phi = postMesh.phi;
-    theta = postMesh.theta;
+    nTheta = workMesh.nTheta;
+    nPhi = workMesh.nPhi;
+    x2d = workMesh.x2d;
+    y2d = workMesh.y2d;
+    phi = workMesh.phi;
+    theta = workMesh.theta;
 
     u2dOrg = batch.u2dOrg;
     v2dOrg = batch.v2dOrg;

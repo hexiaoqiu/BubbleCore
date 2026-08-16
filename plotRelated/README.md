@@ -1,15 +1,22 @@
-# Quiver
+[![View crameri perceptually uniform scientific colormaps on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/68546-crameri-perceptually-uniform-scientific-colormaps)
 
-Here you find 2 MATLAB functions: SetQuiverColor and SetQuiverLength.
-They allow you to change the appearance of quiver plot in MATLAB.
-You can change the color of each arrow (SetQuiverColor) and
-change the length of each arrow (SetQuiverLength) in units of the x/y/z axis.
-It gives better control of what is going on.
+![](crameri7.0.png)
 
-You simply need to give the handle to the function and a magnitude for
-SetQuiverColor or SetQuiverLength function.
+# About
+A simple Matlab function for [Fabio Crameri's perceptually uniform scientific colormaps](https://www.fabiocrameri.ch/colourmaps/). 
 
-In addition, the SetQuiverColor function offer the possibility to provide a
-maximum and minimum value that would be different to that of the magnitudes that
-you request. This allows to saturate or only use part of the colormap range.
-The desired colormap should also be provided.
+# Usage 
+`crameri` without any inputs displays the options for colormaps. 
+
+`crameri ColormapName` sets the colormap of the current axes. 
+
+`cmap = crameri('ColormapName')` returns a 256x3 colormap. For a visual depiction of valid colormap names, type crameri. 
+
+`cmap = crameri('-ColormapName')` a minus sign preceeding any ColormapName flips the order of the colormap. 
+
+`cmap = crameri(...,NLevels)` specifies a number of levels in the colormap. Default value is 256. 
+
+`cmap = crameri(...,'pivot',PivotValue)` centers a diverging colormap such that white  corresponds to a given value and maximum extents are set using current caxis limits.  If no `PivotValue` is set, 0 is assumed. 
+
+# Citation 
+Crameri, Fabio. (2021). Scientific colour maps (7.0.1). Zenodo. [https://doi.org/10.5281/zenodo.5501399](https://doi.org/10.5281/zenodo.5501399)
