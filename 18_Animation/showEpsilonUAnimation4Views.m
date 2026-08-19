@@ -51,7 +51,7 @@ function showEpsilonUAnimation4Views(dns, timeWindow, outputResolution, ...
         if exist(storePath, 'dir') ~= 7
             mkdir(storePath);
         end
-        videoFile = dnsOpenVideoFile(dns, 'Uphi', storePath, frameRate);
+        videoFile = dnsOpenVideoFile(dns, 'EpsilonU', storePath, frameRate);
         videoIsOpen = true;
     end
 
