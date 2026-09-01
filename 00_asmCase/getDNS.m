@@ -4,6 +4,9 @@
 % **************************************************************************************************
 % Purpose:
 %   Build a dns structure used to manipulate and assemble a series of DNS subcases.
+%   The first input may be either:
+%       1. A scalar string/char DNS root directory; or
+%       2. An ordered cell array containing the subcase directories.
 %
 % Attention:
 %   The cases in <subCaseDirList> should be sequenced.
@@ -24,6 +27,11 @@
 %           dns.globalFrameSubCase
 %           dns.globalFrameLocal
 %       5. 增加 dns.timeLine 作为 dns.time 的别名。
+%
+%   2026/09/01:
+%       getDNS can now accept a DNS root directory. In that form it calls
+%       getDnsSubcaseDirList internally. Cell-array input remains the
+%       explicit interface for an ordered list of subcase directories.
 % **************************************************************************************************
 
 function [dns] = getDNS(varargin)
@@ -31,30 +39,21 @@ function [dns] = getDNS(varargin)
     narginchk(1, 2);
 
     if nargin == 1
-        subCaseDirList = varargin{1};
+        dnsSource = varargin{1};
         dns = struct();
     elseif nargin == 2
-        subCaseDirList = varargin{1};
+        dnsSource = varargin{1};
         dns = varargin{2};
     end
 
     % ==============================================================================================
-    % Normalize input subCaseDirList
+    % Normalize the DNS root directory or explicit subcase directory list
     % ==============================================================================================
-    if ischar(subCaseDirList)
-        subCaseDirList = {subCaseDirList};
-    elseif isstring(subCaseDirList)
-        subCaseDirList = cellstr(subCaseDirList);
-    end
-
-    if ~iscell(subCaseDirList)
-        error('subCaseDirList should be a cell array, string array, or char array.')
-    end
-
-    subCaseDirList = reshape(subCaseDirList, 1, []);
+    [subCaseDirList, dnsRootDir] = normalizeDnsSource(dnsSource);
 
     dns.numSubCase = numel(subCaseDirList);
     dns.subCaseDir = subCaseDirList;
+    dns.rootDir = dnsRootDir;
 
     if dns.numSubCase == 0
         error('subCaseDirList is empty.')
@@ -107,7 +106,9 @@ function [dns] = getDNS(varargin)
     end
 
     if dns.numSubCase == 0
-        error('No valid subCase is found! No nssave.bin or nssave.dat exists.')
+        disp('No valid subCase is found! No nssave.bin or nssave.dat exists.')
+        dns = -1;
+        return
     end
 
     % ==============================================================================================
@@ -204,9 +205,9 @@ function [dns] = getDNS(varargin)
     % ==============================================================================================
     % Read reference physical and computational parameters from the first valid subcase
     % ==============================================================================================
-    [Ra_ref, Pr_ref, St_ref, R0_ref, Ff_ref, Delta_ref, ...
+    [Ra_ref, Pr_ref, ~, R0_ref, ~, Delta_ref, ...
      x2dGauche_ref, x2dDroit_ref, y2dBas_ref, y2dHaut_ref, ...
-     n1_ref, n2_ref, maxNPlan_ref, dt_ref, dtSave_ref] ...
+     ~, ~, ~, ~, ~] ...
         = getCoefs(dns.subCaseDir{1});
 
     [r_c_ref_raw, dissipType_ref, ~] = getDissip(dns.subCaseDir{1});
@@ -463,6 +464,105 @@ function [dns] = getDNS(varargin)
     % ==============================================================================================
     disp(['Finished setting up assemble case: ', asmGetParameterStr(dns)])
 
+end
+
+function [subCaseDirList, dnsRootDir] = normalizeDnsSource(dnsSource)
+%NORMALIZEDNSSOURCE Convert supported getDNS inputs to an ordered cell row.
+
+    if iscell(dnsSource)
+        subCaseDirList = dnsSource;
+        dnsRootDir = '';
+
+    elseif isstring(dnsSource)
+        if ~isscalar(dnsSource)
+            error('getDNS:NonScalarRootDirectory', ...
+                ['A string input must be scalar and represent the DNS ' ...
+                 'root directory. Use a cell array for subcase paths.']);
+        end
+        if ismissing(dnsSource) || strlength(dnsSource) == 0
+            error('getDNS:EmptyRootDirectory', ...
+                'The DNS root directory cannot be empty.');
+        end
+        dnsRootDir = char(dnsSource);
+        subCaseDirList = getSubcaseListFromRoot(dnsRootDir);
+
+    elseif ischar(dnsSource)
+        if isempty(dnsSource)
+            error('getDNS:EmptyRootDirectory', ...
+                'The DNS root directory cannot be empty.');
+        end
+        if ~isrow(dnsSource)
+            error('getDNS:InvalidRootDirectory', ...
+                'A char DNS root directory must be a character row vector.');
+        end
+        dnsRootDir = dnsSource;
+        subCaseDirList = getSubcaseListFromRoot(dnsRootDir);
+
+    else
+        error('getDNS:InvalidDnsSource', ...
+            ['The first input must be a scalar string/char DNS root ' ...
+             'directory or a cell array of subcase directories.']);
+    end
+
+    if isempty(subCaseDirList)
+        error('getDNS:EmptySubcaseList', ...
+            'No subcase directory was provided or found.');
+    end
+
+    subCaseDirList = reshape(subCaseDirList, 1, []);
+    for idxSubCase = 1:numel(subCaseDirList)
+        subCaseDir = subCaseDirList{idxSubCase};
+        if isstring(subCaseDir) && isscalar(subCaseDir) && ...
+                ~ismissing(subCaseDir)
+            subCaseDir = char(subCaseDir);
+        end
+        if ~ischar(subCaseDir) || ~isrow(subCaseDir) || isempty(subCaseDir)
+            error('getDNS:InvalidSubcaseDirectory', ...
+                ['Every cell entry must be a nonempty char vector or ' ...
+                 'scalar string. Invalid entry index: %d.'], idxSubCase);
+        end
+        subCaseDirList{idxSubCase} = subCaseDir;
+    end
+
+    if isempty(dnsRootDir)
+        dnsRootDir = inferCommonSubcaseParent(subCaseDirList);
+    end
+end
+
+function subCaseDirList = getSubcaseListFromRoot(dnsRoot)
+%GETSUBCASELISTFROMROOT Discover subcases below one DNS root directory.
+
+    if ~isfolder(dnsRoot)
+        error('getDNS:RootDirectoryNotFound', ...
+            'The DNS root directory does not exist: %s', dnsRoot);
+    end
+    if exist('getDnsSubcaseDirList', 'file') ~= 2
+        error('getDNS:SubcaseDiscoveryFunctionNotFound', ...
+            ['getDnsSubcaseDirList is not on the MATLAB path. Add the ' ...
+             'BubblePlusPost DNS-path tools before calling getDNS with ' ...
+             'a root directory.']);
+    end
+
+    subCaseDirList = getDnsSubcaseDirList(dnsRoot);
+    if ~iscell(subCaseDirList)
+        error('getDNS:InvalidDiscoveredSubcaseList', ...
+            'getDnsSubcaseDirList must return a cell array.');
+    end
+end
+
+function dnsRootDir = inferCommonSubcaseParent(subCaseDirList)
+%INFERCOMMONSUBCASEPARENT Infer a root when an explicit cell list is used.
+
+    parentDirList = cell(size(subCaseDirList));
+    for idxSubCase = 1:numel(subCaseDirList)
+        parentDirList{idxSubCase} = fileparts(subCaseDirList{idxSubCase});
+    end
+
+    if all(strcmp(parentDirList, parentDirList{1}))
+        dnsRootDir = parentDirList{1};
+    else
+        dnsRootDir = '';
+    end
 end
 
 function precision = getDecimalPrecision(x, maxPrecision, tol)
