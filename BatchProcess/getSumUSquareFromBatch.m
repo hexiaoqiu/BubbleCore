@@ -31,7 +31,8 @@ function [sumUSqure, sumUphiSquare, sumVthetaSquare] = ...,
 
         u2d = interp2(x2dU, y2dU, u2dOrg{idxStep}, x2d, y2d, "spline");
         v2d = interp2(x2dV, y2dV, v2dOrg{idxStep}, x2d, y2d, "spline");
-        [uPhi, vTheta] = velocity2DToSph(u2d, v2d, x2d, y2d, phi, theta)
+        [uPhi, vTheta] = velocity2DToSph( ...
+            u2d, v2d, x2d, y2d, phi, theta);
         sumUSqure = sumUSqure + uPhi.^2 + vTheta.^2;
         sumUphiSquare = sumUphiSquare + uPhi.^2;
         sumVthetaSquare = sumVthetaSquare + vTheta.^2;
