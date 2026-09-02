@@ -1,10 +1,13 @@
-function showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, frameRate)
+function showTmpAnimation4Views(dns, timeWindow, outputResolution, ...
+    storePath, frameRate, maxNumStepsPerBatch)
 %SHOWTMPANIMATION4VIEWS Show a four-view temperature animation for one DNS case.
 %
 % Usage:
 %   showTmpAnimation4Views(dns, timeWindow, outputResolution)
 %   showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath)
 %   showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, frameRate)
+%   showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, ...
+%       frameRate, maxNumStepsPerBatch)
 %
 % Inputs:
 %   dns              DNS structure created by setDnsCase/setAsmCase.
@@ -13,8 +16,11 @@ function showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, fr
 %   storePath        Optional. If non-empty, save a video in this folder.
 %                    Linux uses Motion JPEG AVI; Windows/macOS use MPEG-4.
 %   frameRate        Optional. Video frame rate. Default: 30.
+%   maxNumStepsPerBatch
+%                    Optional. Maximum number of snapshots loaded into
+%                    memory at once. Default: 32.
 
-    narginchk(3, 5);
+    narginchk(3, 6);
 
     [animationStartTime, animationEndTime] = parseTimeWindow(dns, timeWindow);
     figPosition = parseOutputResolution(outputResolution);
@@ -29,6 +35,12 @@ function showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, fr
     if nargin < 5 || isempty(frameRate)
         frameRate = 30;
     end
+    if nargin < 6 || isempty(maxNumStepsPerBatch)
+        maxNumStepsPerBatch = 32;
+    end
+    validateattributes(maxNumStepsPerBatch, {'numeric'}, ...
+        {'scalar', 'real', 'finite', 'integer', 'positive'}, ...
+        mfilename, 'maxNumStepsPerBatch', 6);
 
     % Use a denser spherical mesh than the original DNS mesh for smoother
     % animation frames. n1 controls longitude and n2 controls latitude.
@@ -60,43 +72,45 @@ function showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, fr
         dns = asmFinishRead(dns);
     end
 
+    renderState = [];
     try
         while dns.nextReadTime <= animationEndTime
-            if dns.readCounter == 0
-                [dns, tmpOrg, ~, ~, ~] = asmInitRead(dns, animationStartTime);
-            else
-                [dns, tmpOrg, ~, ~, ~] = asmReadOneStepForward(dns);
-            end
+            [dns, batch] = asmReadFieldBatch(dns, ...
+                animationStartTime, animationEndTime, ...
+                maxNumStepsPerBatch, {'tmp'});
 
-            disp(['time = ', num2str(dns.lastReadTime, '%g')])
+            for idxStep = 1:batch.numSteps
+                idxSubCase = batch.subCaseIdx(idxStep);
+                frameTime = batch.time(idxStep);
+                tmpOrg = batch.tmpOrg{idxStep};
 
-            tmpFull = interp2( ...
-                dns.x2dS{dns.readNowSubCaseIdx}, ...
-                dns.y2dS{dns.readNowSubCaseIdx}, ...
-                tmpOrg, ...
-                meshFull.x2d, ...
-                meshFull.y2d, ...
-                "linear");
+                disp(['Rendering: time = ', num2str(frameTime, '%g')])
 
-            % tmpCut = interp2( ...
-            %     dns.x2dS{dns.readNowSubCaseIdx}, ...
-            %     dns.y2dS{dns.readNowSubCaseIdx}, ...
-            %     tmpOrg, ...
-            %     meshCut.x2d, ...
-            %     meshCut.y2d, ...
-            %     "linear");
+                tmpFull = interp2( ...
+                    dns.x2dS{idxSubCase}, ...
+                    dns.y2dS{idxSubCase}, ...
+                    tmpOrg, ...
+                    meshFull.x2d, ...
+                    meshFull.y2d, ...
+                    "linear");
 
-            drawTmpFrame4Views(fig, dns, meshFull, ...
-                tmpFull, RaStr, style);
+                if isempty(renderState)
+                    renderState = initializeTmpFrame4Views(fig, ...
+                        meshFull, tmpFull, RaStr, frameTime, style);
+                else
+                    updateTmpFrame4Views(renderState, tmpFull, ...
+                        RaStr, frameTime);
+                end
 
-            if storeVideoFile == true
-                frame = getframe(fig);
-                writeVideo(videoFile, frame);
+                if storeVideoFile == true
+                    frame = getframe(fig);
+                    writeVideo(videoFile, frame);
+                end
             end
         end
 
         disp('Close the file!');
-        dns = asmFinishRead(dns);
+        asmFinishRead(dns);
         if videoIsOpen == true
             close(videoFile);
         end
@@ -105,7 +119,7 @@ function showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, fr
         end
     catch ME
         if isfield(dns, 'readNowSubCaseIdx') && dns.readNowSubCaseIdx ~= -1
-            dns = asmFinishRead(dns);
+            asmFinishRead(dns);
         end
         if videoIsOpen == true
             close(videoFile);
@@ -123,47 +137,56 @@ function style = getAnimationStyle(figPosition)
     style.tmpContourLevel = 0:0.05:1;
 end
 
-function drawTmpFrame4Views(fig, dns, meshFull, tmpFull, ...
-    RaStr, style)
+function renderState = initializeTmpFrame4Views(fig, meshFull, tmpFull, ...
+    RaStr, frameTime, style)
 
     clf(fig);
     tileObj = tiledlayout(fig, 2, 2, 'TileSpacing', 'Compact');
 
-    ax = nexttile(tileObj);
-    plotTmpSurf(ax, meshFull, tmpFull, [45, 30], style);
-    % plotTmpContourOnSphere(ax, meshFull, tmpFull, ...
-    %     style.tmpContourLevel, [0,0.85*pi/2]);
-    
-    ax = nexttile(tileObj);
-    plotTmpSurf(ax, meshFull, tmpFull, [135, 30], style);
-    % plotTmpContourOnSphere(ax, meshFull, tmpFull, ...
-    %     style.tmpContourLevel, [0,0.85*pi/2]);
-    
-    ax = nexttile(tileObj);
-    plotTmpSurf(ax, meshFull, tmpFull, [225, 30], style);
-    % plotTmpContourOnSphere(ax, meshFull, tmpFull, ...
-    %     style.tmpContourLevel, [0,0.85*pi/2]);
-    
-    ax = nexttile(tileObj);
-    plotTmpSurf(ax, meshFull, tmpFull, [0, 90], style);
-    % plotTmpContourOnSphere(ax, meshFull, tmpFull, ...
-    %     style.tmpContourLevel, [0,0.85*pi/2]);
+    viewList = [
+        45, 30
+        135, 30
+        225, 30
+        0, 90
+        ];
+    axList = gobjects(4, 1);
+    surfaceList = gobjects(4, 1);
+    for idxView = 1:4
+        axList(idxView) = nexttile(tileObj);
+        surfaceList(idxView) = plotTmpSurf(axList(idxView), ...
+            meshFull, tmpFull, viewList(idxView, :), style);
+    end
 
-    cb = colorbar;
+    cb = colorbar(axList(4));
     cb.Ticks = style.colorBarTicks;
     cb.TickLabelInterpreter = 'latex';
     cb.Layout.Tile = 'east';
 
-    sgtitle( ...
-        [RaStr, ' ', '$t=', num2str(dns.lastReadTime, '%.1f'), '$'], ...
+    titleHandle = sgtitle(tileObj, ...
+        getTmpFrameTitle(RaStr, frameTime), ...
         'interpreter', 'latex', ...
         'FontSize', style.titleFontSize);
 
+    renderState.surfaceList = surfaceList;
+    renderState.titleHandle = titleHandle;
     drawnow;
 end
 
-function plotTmpSurf(ax, meshFull, tmpFull, viewAngle, style)
-    surf(ax, meshFull.y3d, meshFull.x3d, meshFull.z3d, tmpFull);
+function updateTmpFrame4Views(renderState, tmpFull, RaStr, frameTime)
+    for idxView = 1:numel(renderState.surfaceList)
+        renderState.surfaceList(idxView).CData = tmpFull;
+    end
+    renderState.titleHandle.String = getTmpFrameTitle(RaStr, frameTime);
+    drawnow;
+end
+
+function titleText = getTmpFrameTitle(RaStr, frameTime)
+    titleText = [RaStr, ' ', '$t=', num2str(frameTime, '%.1f'), '$'];
+end
+
+function surfaceHandle = plotTmpSurf(ax, meshFull, tmpFull, viewAngle, style)
+    surfaceHandle = surf(ax, meshFull.y3d, meshFull.x3d, ...
+        meshFull.z3d, tmpFull);
     view(ax, viewAngle);
     colormap(ax, jet(256));
     shading(ax, 'interp');

@@ -1,12 +1,12 @@
 function showUphiAnimation4Views(dns, timeWindow, outputResolution, ...
-    storePath, uPhiLim, frameRate)
-%SHOWTMPANIMATION4VIEWS Show a four-view U in phi direction animation for 
-% one DNS case.
+    storePath, uPhiLim, frameRate, maxNumStepsPerBatch)
+%SHOWUPHIANIMATION4VIEWS Show a four-view azimuthal-velocity animation.
 %
 % Usage:
 %   showUphiAnimation4Views(dns, timeWindow, outputResolution)
 %   showUphiAnimation4Views(dns, timeWindow, outputResolution, storePath)
-%   showUphiAnimation4Views(dns, timeWindow, outputResolution, storePath, frameRate)
+%   showUphiAnimation4Views(dns, timeWindow, outputResolution, ...
+%       storePath, uPhiLim, frameRate, maxNumStepsPerBatch)
 %
 % Inputs:
 %   dns              DNS structure created by setDnsCase/setAsmCase.
@@ -14,9 +14,14 @@ function showUphiAnimation4Views(dns, timeWindow, outputResolution, ...
 %   outputResolution Two-element vector: [figureWidth, figureHeight].
 %   storePath        Optional. If non-empty, save a video in this folder.
 %                    Linux uses Motion JPEG AVI; Windows/macOS use MPEG-4.
+%   uPhiLim          Optional. Two-element color-axis limit. Default:
+%                    [-0.1, 0.1].
 %   frameRate        Optional. Video frame rate. Default: 30.
+%   maxNumStepsPerBatch
+%                    Optional. Maximum number of snapshots loaded into
+%                    memory at once. Default: 16.
 
-    narginchk(3, 5);
+    narginchk(3, 7);
 
     [animationStartTime, animationEndTime] = parseTimeWindow(dns, timeWindow);
     figPosition = parseOutputResolution(outputResolution);
@@ -28,9 +33,20 @@ function showUphiAnimation4Views(dns, timeWindow, outputResolution, ...
         storePath = '';
     end
 
+    if nargin < 5 || isempty(uPhiLim)
+        uPhiLim = [-0.1, 0.1];
+    end
+    validateColorLimits(uPhiLim, 'uPhiLim');
+
     if nargin < 6 || isempty(frameRate)
         frameRate = 30;
     end
+    if nargin < 7 || isempty(maxNumStepsPerBatch)
+        maxNumStepsPerBatch = 16;
+    end
+    validateattributes(maxNumStepsPerBatch, {'numeric'}, ...
+        {'scalar', 'real', 'finite', 'integer', 'positive'}, ...
+        mfilename, 'maxNumStepsPerBatch', 7);
     
     % Use a denser spherical mesh than the original DNS mesh for smoother
     % animation frames. n1 controls longitude and n2 controls latitude.
@@ -60,39 +76,50 @@ function showUphiAnimation4Views(dns, timeWindow, outputResolution, ...
         dns = asmFinishRead(dns);
     end
 
+    renderState = [];
     try
         while dns.nextReadTime <= animationEndTime
-            if dns.readCounter == 0
-                [dns, ~, u2dOrg, v2dOrg, ~] = asmInitRead(dns, animationStartTime);
-            else
-                [dns, ~, u2dOrg, v2dOrg, ~] = asmReadOneStepForward(dns);
-            end
+            [dns, batch] = asmReadFieldBatch(dns, ...
+                animationStartTime, animationEndTime, ...
+                maxNumStepsPerBatch, {'u2d', 'v2d'});
 
-            disp(['time = ', num2str(dns.lastReadTime, '%g')])
+            for idxStep = 1:batch.numSteps
+                idxSubCase = batch.subCaseIdx(idxStep);
+                frameTime = batch.time(idxStep);
+                u2dOrg = batch.u2dOrg{idxStep};
+                v2dOrg = batch.v2dOrg{idxStep};
 
-            u2d = interp2(dns.x2dU{dns.readNowSubCaseIdx}, ...
-                dns.y2dU{dns.readNowSubCaseIdx}, ...
-                u2dOrg, meshFull.x2d, meshFull.y2d,"spline");
+                disp(['Rendering: time = ', num2str(frameTime, '%g')])
 
-            v2d = interp2(dns.x2dV{dns.readNowSubCaseIdx}, ...
-                dns.y2dV{dns.readNowSubCaseIdx}, ...
-                v2dOrg, meshFull.x2d, meshFull.y2d,"spline");
+                u2d = interp2(dns.x2dU{idxSubCase}, ...
+                    dns.y2dU{idxSubCase}, ...
+                    u2dOrg, meshFull.x2d, meshFull.y2d, "spline");
 
-            [uPhi, ~] = velocity2DToSph(u2d, v2d, ...
-                meshFull.x2d, meshFull.y2d, meshFull.phi, meshFull.theta);
+                v2d = interp2(dns.x2dV{idxSubCase}, ...
+                    dns.y2dV{idxSubCase}, ...
+                    v2dOrg, meshFull.x2d, meshFull.y2d, "spline");
 
+                [uPhi, ~] = velocity2DToSph(u2d, v2d, ...
+                    meshFull.x2d, meshFull.y2d, ...
+                    meshFull.phi, meshFull.theta);
 
-            drawUphiFrame4Views(fig, dns, meshFull, ...
-                uPhi, RaStr, style);
+                if isempty(renderState)
+                    renderState = initializeUphiFrame4Views(fig, ...
+                        meshFull, uPhi, RaStr, frameTime, style);
+                else
+                    updateUphiFrame4Views(renderState, uPhi, ...
+                        RaStr, frameTime);
+                end
 
-            if storeVideoFile == true
-                frame = getframe(fig);
-                writeVideo(videoFile, frame);
+                if storeVideoFile == true
+                    frame = getframe(fig);
+                    writeVideo(videoFile, frame);
+                end
             end
         end
 
         disp('Close the file!');
-        dns = asmFinishRead(dns);
+        asmFinishRead(dns);
         if videoIsOpen == true
             close(videoFile);
         end
@@ -101,12 +128,22 @@ function showUphiAnimation4Views(dns, timeWindow, outputResolution, ...
         end
     catch ME
         if isfield(dns, 'readNowSubCaseIdx') && dns.readNowSubCaseIdx ~= -1
-            dns = asmFinishRead(dns);
+            asmFinishRead(dns);
         end
         if videoIsOpen == true
             close(videoFile);
         end
         rethrow(ME)
+    end
+end
+
+function validateColorLimits(limits, argumentName)
+    validateattributes(limits, {'numeric'}, ...
+        {'vector', 'numel', 2, 'real', 'finite'}, mfilename, argumentName);
+    if limits(1) >= limits(2)
+        error('showUphiAnimation4Views:InvalidColorLimits', ...
+            '%s(1) must be smaller than %s(2).', ...
+            argumentName, argumentName);
     end
 end
 
@@ -121,67 +158,58 @@ function style = getAnimationStyle(figPosition, uPhiLim)
 end
 
 
-function drawUphiFrame4Views(fig, dns, meshFull, uPhi, ...
-    RaStr, style)
+function renderState = initializeUphiFrame4Views(fig, meshFull, uPhi, ...
+    RaStr, frameTime, style)
 
     clf(fig);
-    
     tileObj = tiledlayout(fig, 2, 2, ...
         'TileSpacing', 'Compact', ...
         'Padding', 'Compact');
-    
+
     viewList = [
         45, 30
         135, 30
         225, 30
         0, 90
         ];
-    
+
     axList = gobjects(4, 1);
-    
-    % ------------------------------------------------------------
-    % 1. First axes: really draw the sphere and psi contours
-    % ------------------------------------------------------------
-    axList(1) = nexttile(tileObj);
-    
-    plotUphiSurf(axList(1), meshFull, uPhi, [45, 30], style);
-    
-    setupAxes(axList(1), viewList(1, :), style);
-    
-    % ------------------------------------------------------------
-    % 2. Other axes: copy graphics objects from the first axes
-    % ------------------------------------------------------------
-    sourceChildren = allchild(axList(1));
-    
-    for k = 2:4
-        axList(k) = nexttile(tileObj);
-    
-        copyobj(sourceChildren, axList(k));
-    
-        setupAxes(axList(k), viewList(k, :), style);
-    end
-    
-    % ------------------------------------------------------------
-    % 3. Shared colormap and colorbar
-    % ------------------------------------------------------------
+    surfaceList = gobjects(4, 1);
     cmap = crameri('vik', 256);
-    for k = 1:4
-        clim(axList(k), style.lim);
-        colormap(axList(k), cmap);
+    for idxView = 1:4
+        axList(idxView) = nexttile(tileObj);
+        surfaceList(idxView) = plotUphiSurf(axList(idxView), ...
+            meshFull, uPhi, viewList(idxView, :), style);
+        setupAxes(axList(idxView), viewList(idxView, :), style);
+        colormap(axList(idxView), cmap);
     end
-    
+
     cb = colorbar(axList(4));
     cb.Ticks = style.colorBarTicks;
     cb.TickLabelInterpreter = 'latex';
     cb.Layout.Tile = 'east';
-    
-    sgtitle( ...
-        [RaStr, ' $t=', num2str(dns.lastReadTime, '%.2f'), '$'], ...
+
+    titleHandle = sgtitle(tileObj, ...
+        getUphiFrameTitle(RaStr, frameTime), ...
         'Interpreter', 'latex', ...
         'FontSize', style.titleFontSize);
-    
-    drawnow;
 
+    renderState.surfaceList = surfaceList;
+    renderState.titleHandle = titleHandle;
+    drawnow;
+end
+
+function updateUphiFrame4Views(renderState, uPhi, RaStr, frameTime)
+    for idxView = 1:numel(renderState.surfaceList)
+        renderState.surfaceList(idxView).CData = uPhi;
+    end
+    renderState.titleHandle.String = ...
+        getUphiFrameTitle(RaStr, frameTime);
+    drawnow;
+end
+
+function titleText = getUphiFrameTitle(RaStr, frameTime)
+    titleText = [RaStr, ' $t=', num2str(frameTime, '%.2f'), '$'];
 end
 
 function setupAxes(ax, viewAngle, style)
@@ -222,11 +250,11 @@ function setupAxes(ax, viewAngle, style)
 end
 
 
-function plotUphiSurf(ax, meshFull, tmpFull, viewAngle, style)
-    surf(ax, meshFull.y3d, meshFull.x3d, meshFull.z3d, tmpFull);
-    % surf(ax, meshFull.y3d, meshFull.x3d, tmpFull);
+function surfaceHandle = plotUphiSurf(ax, meshFull, uPhi, ...
+    viewAngle, style)
+    surfaceHandle = surf(ax, meshFull.y3d, meshFull.x3d, ...
+        meshFull.z3d, uPhi);
     view(ax, viewAngle);
-    colormap(ax, bluewhitered(256));
     shading(ax, 'interp');
     grid(ax, 'on');
     clim(ax, style.lim);
