@@ -6,7 +6,8 @@ function allCaseDirList = getSecondLevelFolders(rootDir)
 %       '/Volumes/G-DRIVE PRO/DNS_Data/SpotsOnBubble/'
 %
 % 输出：
-%   allCaseDirList - 包含所有第二级文件夹完整路径的列 cell 数组
+%   allCaseDirList - 包含所有第二级文件夹完整路径的列 cell 数组。
+%                    路径中包含 "readme"（忽略大小写）的目录会被排除。
 
     arguments
         rootDir (1, :) char
@@ -32,4 +33,7 @@ function allCaseDirList = getSecondLevelFolders(rootDir)
     );
 
     allCaseDirList = allCaseDirList(:);
+    containsReadme = contains( ...
+        allCaseDirList, 'readme', 'IgnoreCase', true);
+    allCaseDirList(containsReadme) = [];
 end
