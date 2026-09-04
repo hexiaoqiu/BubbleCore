@@ -1,6 +1,10 @@
 function [sumUSqure, sumUphiSquare, sumVthetaSquare] = ...,
-    getSumUSquareFromBatch(dns, batch, workMesh)
+    getSumUSquareFromBatch(dns, batch, workMesh, interpolationMethod)
 %CALCSUMTMPTHETABATCH Interpolate tmp snapshots and sum their theta profiles.
+
+    if nargin < 4 || isempty(interpolationMethod)
+        interpolationMethod = 'linear';
+    end
 
     numSteps = batch.numSteps;
     nTheta = workMesh.nTheta;
@@ -29,8 +33,10 @@ function [sumUSqure, sumUphiSquare, sumVthetaSquare] = ...,
             x2dGauche, x2dDroit, y2dHaut, y2dBas, ...
             n1(idxStep), n2(idxStep));
 
-        u2d = interp2(x2dU, y2dU, u2dOrg{idxStep}, x2d, y2d, "spline");
-        v2d = interp2(x2dV, y2dV, v2dOrg{idxStep}, x2d, y2d, "spline");
+        u2d = interp2(x2dU, y2dU, u2dOrg{idxStep}, ...
+            x2d, y2d, interpolationMethod);
+        v2d = interp2(x2dV, y2dV, v2dOrg{idxStep}, ...
+            x2d, y2d, interpolationMethod);
         [uPhi, vTheta] = velocity2DToSph( ...
             u2d, v2d, x2d, y2d, phi, theta);
         sumUSqure = sumUSqure + uPhi.^2 + vTheta.^2;

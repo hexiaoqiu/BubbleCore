@@ -1,5 +1,10 @@
-function [sumTmpTheta] = getSumTmpThetaFromBatch(dns, batch, postMesh)
+function [sumTmpTheta] = getSumTmpThetaFromBatch( ...
+        dns, batch, postMesh, interpolationMethod)
 %CALCSUMTMPTHETABATCH Interpolate tmp snapshots and sum their theta profiles.
+
+    if nargin < 4 || isempty(interpolationMethod)
+        interpolationMethod = 'linear';
+    end
 
     numSteps = batch.numSteps;
     nTheta = postMesh.nTheta;
@@ -26,7 +31,8 @@ function [sumTmpTheta] = getSumTmpThetaFromBatch(dns, batch, postMesh)
             x2dGauche, x2dDroit, y2dHaut, y2dBas, ...
             n1(idxStep), n2(idxStep));
 
-        tmp = interp2(x2dS, y2dS, tmpOrg{idxStep}, x2d, y2d, "spline");
+        tmp = interp2(x2dS, y2dS, tmpOrg{idxStep}, ...
+            x2d, y2d, interpolationMethod);
         % phi = 0 and phi = 2*pi are the same physical point. Exclude the
         % final duplicated endpoint from the periodic phi average.
         sumTmpTheta = sumTmpTheta + mean(tmp(:, 1:end-1), 2);
