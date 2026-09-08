@@ -42,10 +42,10 @@ function showTmpAnimation4Views(dns, timeWindow, outputResolution, ...
         {'scalar', 'real', 'finite', 'integer', 'positive'}, ...
         mfilename, 'maxNumStepsPerBatch', 6);
 
-    % Use a denser spherical mesh than the original DNS mesh for smoother
-    % animation frames. n1 controls longitude and n2 controls latitude.
-    nPhi = max(dns.n1(:))*2;
-    nTheta = max(dns.n2(:))*2;
+    % Match the maximum original DNS resolution across all subcases.
+    % n1 controls longitude and n2 controls latitude.
+    nPhi = max(dns.n1(:));
+    nTheta = max(dns.n2(:));
     meshFull = obtainSphMesh(0, 2*pi, 0, pi/2, nPhi, nTheta);
     % meshCut = obtainSphMesh(0, 2*pi, dns.theta_c, pi/2, nPhi, nTheta);
 
