@@ -453,6 +453,8 @@ function [dns] = getDNS(varargin)
     % ==============================================================================================
     dns.lastReadTime = -1;
     dns.nextReadTime = -1;
+    dns.lastReadGlobalFrame = 0;
+    dns.nextReadGlobalFrame = 1;
     dns.readNowSubCaseIdx = -1;
     dns.readNowFileID = -1;
     dns.readCounter = 0;

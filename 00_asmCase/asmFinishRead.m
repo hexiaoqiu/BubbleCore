@@ -7,6 +7,8 @@ function [asmCase] = asmFinishRead(asmCase)
         fclose(asmCase.readNowFileID);
         asmCase.lastReadTime = -1;
         asmCase.nextReadTime = -1;
+        asmCase.lastReadGlobalFrame = 0;
+        asmCase.nextReadGlobalFrame = 1;
         asmCase.readNowSubCaseIdx = -1;
         asmCase.readNowFileID = -1;
         asmCase.readCounter = 0;

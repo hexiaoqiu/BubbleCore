@@ -211,6 +211,8 @@ function [asmCase] = setAsmCase(varargin)
         end
     end
     asmCase.time = zeros(asmCase.totalN,1);
+    asmCase.globalFrameSubCase = zeros(asmCase.totalN,1);
+    asmCase.globalFrameLocal = zeros(asmCase.totalN,1);
     for idxSubCase = 1:asmCase.numSubCase
         if idxSubCase == 1
             asmCase.time(1:asmCase.maxN(1)) = asmCase.timeLocal{idxSubCase};
@@ -218,6 +220,10 @@ function [asmCase] = setAsmCase(varargin)
             headIdx = sum(asmCase.maxN(1:idxSubCase-1));
             asmCase.time(headIdx+1:headIdx+asmCase.maxN(idxSubCase)) = asmCase.timeLocal{idxSubCase};
         end
+        idxGlobal = sum(asmCase.maxN(1:idxSubCase-1))+1: ...
+            sum(asmCase.maxN(1:idxSubCase));
+        asmCase.globalFrameSubCase(idxGlobal) = idxSubCase;
+        asmCase.globalFrameLocal(idxGlobal) = (1:asmCase.maxN(idxSubCase))';
     end
 
     % build and store mesh
@@ -236,6 +242,8 @@ function [asmCase] = setAsmCase(varargin)
     % disp('Initializing read control parameters')
     asmCase.lastReadTime = -1;
     asmCase.nextReadTime = -1;
+    asmCase.lastReadGlobalFrame = 0;
+    asmCase.nextReadGlobalFrame = 1;
     asmCase.readNowSubCaseIdx = -1;
     asmCase.readNowFileID = -1;
     asmCase.readCounter = 0;
