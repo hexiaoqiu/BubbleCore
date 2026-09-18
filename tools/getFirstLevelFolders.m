@@ -7,7 +7,8 @@ function allCaseDirList = getFirstLevelFolders(rootDir)
 %
 % 输出：
 %   allCaseDirList - 包含所有第一级文件夹完整路径的列 cell 数组。
-%                    路径中包含 "readme"（忽略大小写）的目录会被排除。
+%                    文件夹自身名称包含 "readme"（忽略大小写）时
+%                    会被排除；rootDir 的名称不参与判断。
 
     arguments
         rootDir (1, :) char
@@ -25,6 +26,11 @@ function allCaseDirList = getFirstLevelFolders(rootDir)
     folderInfo = folderInfo([folderInfo.isdir]);
     folderInfo = folderInfo(~ismember({folderInfo.name}, {'.', '..'}));
 
+    % 只检查目标文件夹自身的名称，不检查其完整路径
+    containsReadme = contains( ...
+        {folderInfo.name}, 'readme', 'IgnoreCase', true);
+    folderInfo(containsReadme) = [];
+
     % 组合成完整路径，并存入列 cell 数组
     allCaseDirList = arrayfun( ...
         @(item) fullfile(item.folder, item.name), ...
@@ -33,7 +39,4 @@ function allCaseDirList = getFirstLevelFolders(rootDir)
     );
 
     allCaseDirList = allCaseDirList(:);
-    containsReadme = contains( ...
-        allCaseDirList, 'readme', 'IgnoreCase', true);
-    allCaseDirList(containsReadme) = [];
 end
