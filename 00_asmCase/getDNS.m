@@ -210,15 +210,9 @@ function [dns] = getDNS(varargin)
      ~, ~, ~, ~, ~] ...
         = getCoefs(dns.subCaseDir{1});
 
-    [r_c_ref_raw, dissipType_ref, ~] = getDissip(dns.subCaseDir{1});
+    model_ref = getBubblePlusModel(dns.subCaseDir{1});
+    dissip_ref = getDissipParameters(dns.subCaseDir{1},model_ref);
     [Amp_vib, Omega_vib] = getVibration(dns.subCaseDir{1});
-
-    r_c_ref = r_c_ref_raw;
-
-    if isnan(r_c_ref)
-        r_c_ref = 0;
-        dissipType_ref = 0;
-    end
 
     % ==============================================================================================
     % Store physical parameters
@@ -232,17 +226,29 @@ function [dns] = getDNS(varargin)
     % tilted bubble
     dns.Delta = Delta_ref;
 
+    % Bubble+ physical model
+    dns.typobs = model_ref.typobs;
+    dns.model = model_ref;
+    dns.modelKey = model_ref.key;
+    dns.modelName = model_ref.name;
+    dns.isFTB = model_ref.isFTB;
+    dns.hasSpots = model_ref.hasSpots;
+    dns.hasNonlinearRayleighFriction = ...
+        model_ref.hasNonlinearRayleighFriction;
+    dns.dissip = dissip_ref;
+
     % frozen top bubble
-    dns.r_c = r_c_ref_raw;
-    dns.theta_c = atan(dns.r_c) * 2;
-    dns.theta_c_deg = rad2deg(dns.theta_c);
-    dns.H = pi/2 - dns.theta_c;
-    dns.W = (2*pi) / dns.H;
-    dns.A = 1 / sin(dns.theta_c);
-    dns.realRa = dns.Ra * (dns.H)^3;
-
-    if isnan(dns.r_c)
-
+    if model_ref.isFTB
+        dns.r_c = dissip_ref.r_c;
+        dns.theta_c = atan(dns.r_c) * 2;
+        dns.theta_c_deg = rad2deg(dns.theta_c);
+        dns.H = pi/2 - dns.theta_c;
+        dns.W = (2*pi) / dns.H;
+        dns.A = 1 / sin(dns.theta_c);
+        dns.realRa = dns.Ra * (dns.H)^3;
+        dns.dissipType = dissip_ref.dissipType;
+        dns.delta_r = dissip_ref.delta_r;
+    else
         dns.r_c = 0;
         dns.theta_c = 0;
         dns.theta_c_deg = 0;
@@ -250,10 +256,13 @@ function [dns] = getDNS(varargin)
         dns.W = 4;
         dns.realRa = dns.Ra;
         dns.A = 0;
-
+        dns.dissipType = 0;
+        dns.delta_r = 0;
     end
 
-    dns.dissipType = dissipType_ref;
+    % nonlinear Rayleigh friction
+    dns.rayleighVelocityThreshold = dissip_ref.velocityThreshold;
+    dns.rayleighActivationRate = dissip_ref.activationRate;
 
     % vibration bubble
     dns.Amp_vib = Amp_vib;
@@ -282,6 +291,8 @@ function [dns] = getDNS(varargin)
     dns.maxNPlan = zeros(1, dns.numSubCase);
     dns.dt = zeros(1, dns.numSubCase);
     dns.dtSave = zeros(1, dns.numSubCase);
+    dns.modelBySubCase = cell(1,dns.numSubCase);
+    dns.dissipBySubCase = cell(1,dns.numSubCase);
 
     for idxSubCase = 1:dns.numSubCase
 
@@ -290,11 +301,21 @@ function [dns] = getDNS(varargin)
          n1_i, n2_i, maxNPlan_i, dt_i, dtSave_i] ...
             = getCoefs(dns.subCaseDir{idxSubCase});
 
-        [r_c_i, dissipType_i, ~] = getDissip(dns.subCaseDir{idxSubCase});
+        model_i = getBubblePlusModel(dns.subCaseDir{idxSubCase});
+        dissip_i = getDissipParameters(dns.subCaseDir{idxSubCase},model_i);
 
-        if isnan(r_c_i)
-            r_c_i = 0;
-            dissipType_i = 0;
+        if model_ref.typobs ~= model_i.typobs
+            error('getDNS:InconsistentModelType', ...
+                ['Subcase %d uses TYPOBS=%d, but the reference subcase ' ...
+                 'uses TYPOBS=%d. Inconsistent subcase: %s.'], ...
+                idxSubCase,model_i.typobs,model_ref.typobs, ...
+                dns.subCaseDir{idxSubCase});
+        end
+        if ~areDissipParametersConsistent(dissip_ref,dissip_i)
+            error('getDNS:InconsistentDissipParameters', ...
+                ['Subcase %d has model-specific dissip.dat parameters ' ...
+                 'that differ from the reference subcase: %s.'], ...
+                idxSubCase,dns.subCaseDir{idxSubCase});
         end
 
         consistency = ...
@@ -305,9 +326,7 @@ function [dns] = getDNS(varargin)
             (x2dGauche_ref == x2dGauche_i) && ...
             (x2dDroit_ref  == x2dDroit_i)  && ...
             (y2dBas_ref    == y2dBas_i)    && ...
-            (y2dHaut_ref   == y2dHaut_i)   && ...
-            (r_c_ref == r_c_i) && ...
-            (dissipType_ref == dissipType_i);
+            (y2dHaut_ref   == y2dHaut_i);
 
         if ~consistency
 
@@ -326,6 +345,8 @@ function [dns] = getDNS(varargin)
         dns.maxNPlan(idxSubCase) = maxNPlan_i;
         dns.dt(idxSubCase) = dt_i;
         dns.dtSave(idxSubCase) = dtSave_i;
+        dns.modelBySubCase{idxSubCase} = model_i;
+        dns.dissipBySubCase{idxSubCase} = dissip_i;
 
     end
 
@@ -466,6 +487,32 @@ function [dns] = getDNS(varargin)
     % ==============================================================================================
     disp(['Finished setting up assemble case: ', asmGetParameterStr(dns)])
 
+end
+
+function consistent = areDissipParametersConsistent(reference,current)
+%AREDISSIPPARAMETERSCONSISTENT Compare only model-relevant values.
+
+    if ~strcmp(reference.type,current.type)
+        consistent = false;
+        return
+    end
+
+    switch reference.type
+        case 'frozenTop'
+            consistent = ...
+                isequaln(reference.dissipType,current.dissipType) && ...
+                isequaln(reference.r_c,current.r_c) && ...
+                isequaln(reference.delta_r,current.delta_r);
+        case 'nonlinearRayleigh'
+            consistent = ...
+                isequaln(reference.velocityThreshold, ...
+                    current.velocityThreshold) && ...
+                isequaln(reference.activationRate,current.activationRate);
+        case 'none'
+            consistent = true;
+        otherwise
+            consistent = false;
+    end
 end
 
 function [subCaseDirList, dnsRootDir] = normalizeDnsSource(dnsSource)

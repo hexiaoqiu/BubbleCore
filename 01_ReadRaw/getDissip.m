@@ -1,22 +1,21 @@
-function [r_c, dissipType,delta_r] = getDissip(caseRawDir)
-    % locate the nsread.dat
-    dissipDir = fullfile(caseRawDir,'dissip.dat');
+function [r_c,dissipType,delta_r] = getDissip(caseRawDir)
+%GETDISSIP Read legacy Frozen Top Bubble dissipation parameters.
+%   This three-output interface is retained for historical FTB utilities.
+%   It now checks TYPOBS before interpreting dissip.dat, so a nonlinear
+%   Rayleigh parameter file can never be mistaken for the FTB format.
+%   New model-aware code should use GETBUBBLEPLUSMODEL followed by
+%   GETDISSIPPARAMETERS.
 
-    % read the string
-    fid = fopen(dissipDir, 'r');
-    if fid > 0
-        cache = textscan(fid, '%f', 1, 'headerlines', 1);
-        dissipType = cache{1};
-        cache = textscan(fid, '%f', 1, 'headerlines', 2);
-        r_c = cache{1};
-        cache = textscan(fid, '%f', 1, 'headerlines', 2);
-        delta_r = cache{1};
-        fclose(fid);
+    model = getBubblePlusModel(caseRawDir);
+    dissip = getDissipParameters(caseRawDir,model);
+
+    if model.isFTB
+        r_c = dissip.r_c;
+        dissipType = dissip.dissipType;
+        delta_r = dissip.delta_r;
     else
-        disp('No dissip.dat found! Skip it!');
         r_c = NaN;
         dissipType = NaN;
         delta_r = NaN;
     end
-
 end
