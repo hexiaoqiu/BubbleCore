@@ -1,114 +1,107 @@
-function [realMaxN] = asmGetRealMaxNBin(rawCaseDir)
+function [realMaxN, snapshotInfo] = asmGetRealMaxNBin(rawCaseDir)
+%ASMGETREALMAXNBIN Count usable snapshots in a fixed-record nssave.bin file.
+%   The binary format stores every snapshot with the same number of bytes.
+%   Therefore, the number of complete records can be obtained directly from
+%   the file size without reading every flow-field array.
+%
+%   REALMAXN is limited by maxN from the subcase parameter file. This keeps
+%   legacy time-averaged records appended after the planned instantaneous
+%   snapshots out of the DNS time series.
 
-    [Ra, Pr, St, R0, Ff, Delta,x2dGauche, x2dDroit, y2dBas, y2dHaut, n1, n2, maxN,dt,dtSave] ...,
-    = getCoefs(rawCaseDir);
+    [~, ~, ~, ~, ~, ~, ...
+     x2dGauche, x2dDroit, y2dBas, y2dHaut, ...
+     n1, n2, maxNPlan, ~, ~] = getCoefs(rawCaseDir);
 
+    validateattributes(n1,{'numeric'},{'scalar','integer','positive'});
+    validateattributes(n2,{'numeric'},{'scalar','integer','positive'});
+    validateattributes(maxNPlan,{'numeric'}, ...
+        {'scalar','integer','nonnegative'});
 
-    % locate original data file
-    nssaveDir = fullfile(rawCaseDir,'nssave.bin');
-    % open file
-    fid = fopen(nssaveDir, 'r','n');
-    
-    for timeStep = 1:1:maxN
+    nssaveFile = fullfile(rawCaseDir,'nssave.bin');
+    fileInfo = dir(nssaveFile);
+    if isempty(fileInfo)
+        error('asmGetRealMaxNBin:FileNotFound', ...
+            'Cannot find binary DNS data file: %s',nssaveFile);
+    end
 
-        % indicate the index to operate
-%         disp(['Go through time step = ',num2str(timeStep,'%d')])
-        headIntegrity = false;
-        tmpIntegrity = false;
-        u2dIntegrity = false;
-        v2dIntegrity = false;
-        prsIntegrity = false;
+    headerBytes = 4*8 + 2*4;
+    numFieldValues = ...
+        n1*n2 + ...
+        (n1+1)*n2 + ...
+        n1*(n2+1) + ...
+        n1*n2;
+    snapshotBytes = headerBytes + 8*numFieldValues;
 
-        % detect the start of the flow field data for one time step
-        FirstDouble = fread(fid,1,"double",'n');
-        SecondDouble = fread(fid,1,"double",'n');
-        ThirdDouble = fread(fid,1,"double",'n');
-        FourthDouble = fread(fid,1,"double",'n');
-        FirstInt = fread(fid,1,"int",'n');
-        SecondInt = fread(fid,1,"int",'n');
-        headExist = (~isempty(FirstDouble))&&(~isempty(SecondDouble))&&(~isempty(ThirdDouble))&&(~isempty(FourthDouble)) ...
-            &&(~isempty(FirstInt))&&(~isempty(SecondInt));
-        if headExist == false
-            disp(['Time step ',num2str(timeStep,'%d'),': header is empty!'])
-            disp('The left fields (tmp u2d, v2d, prs) are lost for sure!')
-        else
-            headCorrect = ...,
-            (FirstDouble == x2dGauche) && ...,
-            (SecondDouble == x2dDroit) && ...,
-            (ThirdDouble == y2dBas) && ...,
-            (FourthDouble == y2dHaut) && ...,
-            (FirstInt == n1) && ...,
-            (SecondInt == n2);
-            if headCorrect == false
-                disp(['Time step ',num2str(timeStep,'%d'),': header is not correct!'])
-                disp('The left fields (tmp u2d, v2d, prs) are lost for sure!')
-            else
-                headIntegrity = true;
-            end
+    fileBytes = fileInfo.bytes;
+    numStoredSnapshots = floor(fileBytes/snapshotBytes);
+    trailingBytes = mod(fileBytes,snapshotBytes);
+    realMaxN = min(numStoredSnapshots,maxNPlan);
+
+    snapshotInfo = struct();
+    snapshotInfo.filePath = nssaveFile;
+    snapshotInfo.fileBytes = fileBytes;
+    snapshotInfo.snapshotBytes = snapshotBytes;
+    snapshotInfo.numStoredSnapshots = numStoredSnapshots;
+    snapshotInfo.numUsableSnapshots = realMaxN;
+    snapshotInfo.numPlannedSnapshots = maxNPlan;
+    snapshotInfo.numIgnoredSnapshots = ...
+        max(0,numStoredSnapshots-maxNPlan);
+    snapshotInfo.trailingBytes = trailingBytes;
+    snapshotInfo.isFileSizeAligned = trailingBytes == 0;
+    snapshotInfo.isHeaderValidated = false;
+
+    if trailingBytes ~= 0
+        warning('asmGetRealMaxNBin:IncompleteTrailingRecord', ...
+            ['%s contains %d complete snapshots followed by %d extra ' ...
+             'bytes. Only complete snapshots will be used.'], ...
+            nssaveFile,numStoredSnapshots,trailingBytes);
+    end
+
+    if numStoredSnapshots > maxNPlan
+        fprintf(['Ignoring %d record(s) after the %d planned ' ...
+                 'instantaneous snapshots in %s.\n'], ...
+            numStoredSnapshots-maxNPlan,maxNPlan,nssaveFile);
+    end
+
+    if realMaxN == 0
+        return
+    end
+
+    % Only inspect the first and last usable headers. This catches an
+    % incorrect grid or record stride without loading any flow-field array.
+    fileID = fopen(nssaveFile,'r','n');
+    if fileID < 0
+        error('asmGetRealMaxNBin:CannotOpenFile', ...
+            'Cannot open binary DNS data file: %s',nssaveFile);
+    end
+    cleanupObject = onCleanup(@() fclose(fileID));
+
+    frameIndices = unique([1,realMaxN]);
+    for idxFrame = frameIndices
+        byteOffset = (idxFrame-1)*snapshotBytes;
+        seekStatus = fseek(fileID,byteOffset,'bof');
+        if seekStatus ~= 0
+            error('asmGetRealMaxNBin:SeekFailed', ...
+                'Cannot seek to snapshot %d in %s.',idxFrame,nssaveFile);
         end
 
-        
-        if headIntegrity == true
-            % read tmpOrg Temperature Field
-            tmpOrgFortran = fread(fid,[n1,n2],"double");
-            if numel(tmpOrgFortran)~=(n1*n2)
-                disp(['Time step ',num2str(timeStep,'%d'),': temperature field broken!'])
-                disp('The left fields (u2d, v2d, prs) are lost for sure!')
-            else
-                tmpIntegrity = true;
-            end
-        end
-        
-        % read the Velocity Field in x direction of the Computing 
-        % Coordinate system
-        if tmpIntegrity == true
-            u2dOrgFortran = fread(fid,[n1+1,n2],"double");
-            if numel(u2dOrgFortran)~=((n1+1)*n2)
-                disp(['Time step ',num2str(timeStep,'%d'),': u2d field broken!'])
-                disp('The left fields (v2d, prs) are lost for sure!')
-            else
-                u2dIntegrity = true;
-            end
-        end
+        boundaryValues = fread(fileID,4,'double=>double');
+        gridSize = fread(fileID,2,'int32=>double');
 
-        % read the Velocity Field in y direction of the Computing 
-        % Coordinate system
-        if u2dIntegrity == true
-            v2dOrgFortran = fread(fid,[n1,n2+1],"double");
-            if numel(v2dOrgFortran)~=(n1*(n2+1))
-                disp(['Time step ',num2str(timeStep,'%d'),': v2d field broken!'])
-                disp('The left fields (prs) are lost for sure!')
-            else
-                v2dIntegrity = true;
-            end
-        end
+        headerIsComplete = ...
+            numel(boundaryValues) == 4 && numel(gridSize) == 2;
+        headerIsCorrect = headerIsComplete && ...
+            isequal(boundaryValues(:), ...
+                [x2dGauche;x2dDroit;y2dBas;y2dHaut]) && ...
+            isequal(gridSize(:),[n1;n2]);
 
-        % read Pressure field
-        if v2dIntegrity == true
-            prsOrgFortran = fread(fid,[n1,n2],"double");
-            if numel(prsOrgFortran)~=(n1*n2)
-                disp(['Time step ',num2str(timeStep,'%d'),': prs field broken!'])
-            else
-                prsIntegrity = true;
-            end
-        end
-
-        if (headIntegrity == true)&&(tmpIntegrity == true)&&(u2dIntegrity == true) ...
-           &&(v2dIntegrity == true)&&(prsIntegrity == true)
-            if timeStep < maxN
-                disp(['Time step ',num2str(timeStep,'%d'),': data is integral!'])
-                continue
-            else
-                disp('Reach the last time step data!')
-                realMaxN = maxN;
-            end
-        else
-            disp(['Time step ',num2str(timeStep,'%d'),': data is not integrate!'])
-            realMaxN = timeStep-1;
-            disp(['Read Max Time step is ',num2str(realMaxN,'%d')])
-            break
+        if ~headerIsCorrect
+            error('asmGetRealMaxNBin:InvalidSnapshotHeader', ...
+                ['Snapshot %d in %s has an invalid header. The file ' ...
+                 'size alone cannot be trusted for this subcase.'], ...
+                idxFrame,nssaveFile);
         end
     end
-    fclose(fid);
-end
 
+    snapshotInfo.isHeaderValidated = true;
+end

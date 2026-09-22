@@ -116,12 +116,22 @@ function [dns] = getDNS(varargin)
     % Remove subcases with realMaxN == 0
     % ==============================================================================================
     dns.maxN = zeros(1, dns.numSubCase);
+    dns.snapshotFileInfo = cell(1,dns.numSubCase);
 
     for idxSubCase = 1:dns.numSubCase
 
         filePathRealMaxN = fullfile(dns.subCaseDir{idxSubCase}, 'realMaxN.txt');
 
-        if exist(filePathRealMaxN, 'file') == 2
+        if strcmp(dns.type{idxSubCase},'bin')
+
+            % nssave.bin is a fixed-record file. Count complete records
+            % directly from its size and validate the first and last usable
+            % headers. Binary subcases no longer depend on realMaxN.txt.
+            [realMaxN, snapshotInfo] = ...
+                asmGetRealMaxNBin(dns.subCaseDir{idxSubCase});
+            dns.snapshotFileInfo{idxSubCase} = snapshotInfo;
+
+        elseif exist(filePathRealMaxN, 'file') == 2
 
             fileIDRealMaxN = fopen(filePathRealMaxN, 'r', 'n');
 
@@ -144,11 +154,7 @@ function [dns] = getDNS(varargin)
             disp(['No real MaxN record is found! Check it by going through ', ...
                   dns.subCaseDir{idxSubCase}, ' !'])
 
-            if strcmp(dns.type{idxSubCase}, 'bin')
-                realMaxN = asmGetRealMaxNBin(dns.subCaseDir{idxSubCase});
-            else
-                realMaxN = asmGetRealMaxNTxt(dns.subCaseDir{idxSubCase});
-            end
+            realMaxN = asmGetRealMaxNTxt(dns.subCaseDir{idxSubCase});
 
             disp('Get Real MaxN! Write it to realMaxN.txt!')
 
@@ -185,6 +191,7 @@ function [dns] = getDNS(varargin)
         dns.type         = dns.type(idxValidSubCase);
         dns.dataFileName = dns.dataFileName(idxValidSubCase);
         dns.maxN         = dns.maxN(idxValidSubCase);
+        dns.snapshotFileInfo = dns.snapshotFileInfo(idxValidSubCase);
 
         dns.numSubCase = numel(idxValidSubCase);
 
