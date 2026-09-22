@@ -1,57 +1,37 @@
-function showEpsilonUAnimation4Views(dns, timeWindow, outputResolution, ...
-    storePath, limMax, frameRate, maxNumStepsPerBatch)
+function showEpsilonUAnimation4Views(dns, options)
 %SHOWEPSILONUANIMATION4VIEWS Show dissipation and streamfunction in four views.
 %
-% Usage:
-%   showEpsilonUAnimation4Views(dns, timeWindow, outputResolution)
-%   showEpsilonUAnimation4Views(dns, timeWindow, outputResolution, storePath)
-%   showEpsilonUAnimation4Views(dns, timeWindow, outputResolution, ...
-%       storePath, limMax, frameRate, maxNumStepsPerBatch)
-%
-% Inputs:
-%   dns              DNS structure created by setDnsCase/setAsmCase.
-%   timeWindow       Two-element vector: [animationStartTime, animationEndTime].
-%   outputResolution Two-element vector: [figureWidth, figureHeight].
-%   storePath        Optional. If non-empty, save a video in this folder.
-%                    Linux uses Motion JPEG AVI; Windows/macOS use MPEG-4.
-%   limMax           Optional. Two-element color-axis limit for
-%                    log10(epsilonU). Default: [-10, 10].
-%   frameRate        Optional. Video frame rate. Default: 30.
-%   maxNumStepsPerBatch
-%                    Optional. Maximum number of snapshots loaded into
-%                    memory at once. Default: 16.
+%   OPTIONS fields and defaults:
+%       timeWindow             [dns.dnsBeginTime, dns.dnsStopTime]
+%       outputResolution       [1024, 768]
+%       interpolationResolution [] -> maximum original DNS resolution
+%       outputDirectory        '' -> display only; do not save video
+%       epsilonULim            [-10, 10], applied to log10(epsilonU)
+%       frameRate              30
+%       maxNumStepsPerBatch    16
 
-    narginchk(3, 7);
+    narginchk(1, 2);
+    if nargin < 2 || isempty(options)
+        options = struct();
+    end
+    options = normalizeOptions(dns, options);
 
-    [animationStartTime, animationEndTime] = parseTimeWindow(dns, timeWindow);
-    figPosition = parseOutputResolution(outputResolution);
+    [animationStartTime, animationEndTime] = ...
+        parseTimeWindow(dns, options.timeWindow);
+    figPosition = parseOutputResolution(options.outputResolution);
+    storePath = options.outputDirectory;
+    storeVideoFile = ~isempty(storePath);
+    limMax = options.epsilonULim;
+    frameRate = options.frameRate;
+    maxNumStepsPerBatch = options.maxNumStepsPerBatch;
 
-    storeVideoFile = false;
-    if nargin >= 4 && ~isempty(storePath)
-        storeVideoFile = true;
+    if isempty(options.interpolationResolution)
+        nPhi = max(dns.n1(:));
+        nTheta = max(dns.n2(:));
     else
-        storePath = '';
+        nPhi = options.interpolationResolution(1);
+        nTheta = options.interpolationResolution(2);
     end
-
-    if nargin < 5 || isempty(limMax)
-        limMax = [-10,10];
-    end
-    validateColorLimits(limMax, 'limMax');
-
-    if nargin < 6 || isempty(frameRate)
-        frameRate = 30;
-    end
-    if nargin < 7 || isempty(maxNumStepsPerBatch)
-        maxNumStepsPerBatch = 16;
-    end
-    validateattributes(maxNumStepsPerBatch, {'numeric'}, ...
-        {'scalar', 'real', 'finite', 'integer', 'positive'}, ...
-        mfilename, 'maxNumStepsPerBatch', 7);
-
-    % Use a denser spherical mesh than the original DNS mesh for smoother
-    % animation frames. n1 controls longitude and n2 controls latitude.
-    nPhi = max(dns.n1(:));
-    nTheta = max(dns.n2(:));
     meshFull = obtainSphMesh(0, 2*pi, 0, pi/2, nPhi, nTheta);
 
     style = getAnimationStyle(figPosition, limMax);
@@ -144,6 +124,57 @@ function showEpsilonUAnimation4Views(dns, timeWindow, outputResolution, ...
             close(videoFile);
         end
         rethrow(ME)
+    end
+end
+
+function options = normalizeOptions(dns, options)
+%NORMALIZEOPTIONS 补齐并验证耗散率动画选项。
+    validateattributes(options, {'struct'}, {'scalar'}, mfilename, 'options', 2);
+    defaults = struct('timeWindow', [dns.dnsBeginTime, dns.dnsStopTime], ...
+        'outputResolution', [1024, 768], 'interpolationResolution', [], ...
+        'outputDirectory', '', 'epsilonULim', [-10, 10], ...
+        'frameRate', 30, 'maxNumStepsPerBatch', 16);
+    options = applyDefaults(options, defaults);
+    validateCommonOptions(options);
+    validateColorLimits(options.epsilonULim, 'options.epsilonULim');
+end
+
+function options = applyDefaults(options, defaults)
+    validFields = fieldnames(defaults);
+    unknownFields = setdiff(fieldnames(options), validFields, 'stable');
+    if ~isempty(unknownFields)
+        error([mfilename, ':UnknownOption'], ...
+            'Unknown options field(s): %s', strjoin(unknownFields, ', '));
+    end
+    for idxField = 1:numel(validFields)
+        fieldName = validFields{idxField};
+        if ~isfield(options, fieldName)
+            options.(fieldName) = defaults.(fieldName);
+        end
+    end
+end
+
+function validateCommonOptions(options)
+    validateattributes(options.outputResolution, {'numeric'}, ...
+        {'vector', 'numel', 2, 'real', 'finite', 'integer', 'positive'});
+    if ~isempty(options.interpolationResolution)
+        validateattributes(options.interpolationResolution, {'numeric'}, ...
+            {'vector', 'numel', 2, 'real', 'finite', 'integer', 'positive'});
+        if any(options.interpolationResolution < 3)
+            error([mfilename, ':InterpolationResolutionTooSmall'], ...
+                ['Each interpolation resolution must be at least 3 ', ...
+                 'because epsilonU requires spatial derivatives.']);
+        end
+    end
+    validateattributes(options.frameRate, {'numeric'}, ...
+        {'scalar', 'real', 'finite', 'positive'});
+    validateattributes(options.maxNumStepsPerBatch, {'numeric'}, ...
+        {'scalar', 'real', 'finite', 'integer', 'positive'});
+    if ~((ischar(options.outputDirectory) && ...
+            (isrow(options.outputDirectory) || isempty(options.outputDirectory))) || ...
+            (isstring(options.outputDirectory) && isscalar(options.outputDirectory)))
+        error([mfilename, ':InvalidOutputDirectory'], ...
+            'options.outputDirectory must be a character vector or string scalar.');
     end
 end
 

@@ -1,51 +1,35 @@
-function showTmpAnimation4Views(dns, timeWindow, outputResolution, ...
-    storePath, frameRate, maxNumStepsPerBatch)
+function showTmpAnimation4Views(dns, options)
 %SHOWTMPANIMATION4VIEWS Show a four-view temperature animation for one DNS case.
 %
-% Usage:
-%   showTmpAnimation4Views(dns, timeWindow, outputResolution)
-%   showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath)
-%   showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, frameRate)
-%   showTmpAnimation4Views(dns, timeWindow, outputResolution, storePath, ...
-%       frameRate, maxNumStepsPerBatch)
-%
-% Inputs:
-%   dns              DNS structure created by setDnsCase/setAsmCase.
-%   timeWindow       Two-element vector: [animationStartTime, animationEndTime].
-%   outputResolution Two-element vector: [figureWidth, figureHeight].
-%   storePath        Optional. If non-empty, save a video in this folder.
-%                    Linux uses Motion JPEG AVI; Windows/macOS use MPEG-4.
-%   frameRate        Optional. Video frame rate. Default: 30.
-%   maxNumStepsPerBatch
-%                    Optional. Maximum number of snapshots loaded into
-%                    memory at once. Default: 32.
+%   OPTIONS fields and defaults:
+%       timeWindow             [dns.dnsBeginTime, dns.dnsStopTime]
+%       outputResolution       [1024, 768]
+%       interpolationResolution [] -> maximum original DNS resolution
+%       outputDirectory        '' -> display only; do not save video
+%       frameRate              30
+%       maxNumStepsPerBatch    32
 
-    narginchk(3, 6);
+    narginchk(1, 2);
+    if nargin < 2 || isempty(options)
+        options = struct();
+    end
+    options = normalizeOptions(dns, options);
 
-    [animationStartTime, animationEndTime] = parseTimeWindow(dns, timeWindow);
-    figPosition = parseOutputResolution(outputResolution);
+    [animationStartTime, animationEndTime] = ...
+        parseTimeWindow(dns, options.timeWindow);
+    figPosition = parseOutputResolution(options.outputResolution);
+    storePath = options.outputDirectory;
+    storeVideoFile = ~isempty(storePath);
+    frameRate = options.frameRate;
+    maxNumStepsPerBatch = options.maxNumStepsPerBatch;
 
-    storeVideoFile = false;
-    if nargin >= 4 && ~isempty(storePath)
-        storeVideoFile = true;
+    if isempty(options.interpolationResolution)
+        nPhi = max(dns.n1(:));
+        nTheta = max(dns.n2(:));
     else
-        storePath = '';
+        nPhi = options.interpolationResolution(1);
+        nTheta = options.interpolationResolution(2);
     end
-
-    if nargin < 5 || isempty(frameRate)
-        frameRate = 30;
-    end
-    if nargin < 6 || isempty(maxNumStepsPerBatch)
-        maxNumStepsPerBatch = 32;
-    end
-    validateattributes(maxNumStepsPerBatch, {'numeric'}, ...
-        {'scalar', 'real', 'finite', 'integer', 'positive'}, ...
-        mfilename, 'maxNumStepsPerBatch', 6);
-
-    % Match the maximum original DNS resolution across all subcases.
-    % n1 controls longitude and n2 controls latitude.
-    nPhi = max(dns.n1(:));
-    nTheta = max(dns.n2(:));
     meshFull = obtainSphMesh(0, 2*pi, 0, pi/2, nPhi, nTheta);
     % meshCut = obtainSphMesh(0, 2*pi, dns.theta_c, pi/2, nPhi, nTheta);
 
@@ -126,6 +110,61 @@ function showTmpAnimation4Views(dns, timeWindow, outputResolution, ...
         end
         rethrow(ME)
     end
+end
+
+function options = normalizeOptions(dns, options)
+%NORMALIZEOPTIONS 补齐并验证温度动画选项。
+    validateattributes(options, {'struct'}, {'scalar'}, mfilename, 'options', 2);
+    defaults = struct( ...
+        'timeWindow', [dns.dnsBeginTime, dns.dnsStopTime], ...
+        'outputResolution', [1024, 768], ...
+        'interpolationResolution', [], ...
+        'outputDirectory', '', ...
+        'frameRate', 30, ...
+        'maxNumStepsPerBatch', 32);
+    options = applyDefaults(options, defaults);
+    validateCommonOptions(options);
+end
+
+function options = applyDefaults(options, defaults)
+    validFields = fieldnames(defaults);
+    unknownFields = setdiff(fieldnames(options), validFields, 'stable');
+    if ~isempty(unknownFields)
+        error([mfilename, ':UnknownOption'], ...
+            'Unknown options field(s): %s', strjoin(unknownFields, ', '));
+    end
+    for idxField = 1:numel(validFields)
+        fieldName = validFields{idxField};
+        if ~isfield(options, fieldName)
+            options.(fieldName) = defaults.(fieldName);
+        end
+    end
+end
+
+function validateCommonOptions(options)
+    validateattributes(options.outputResolution, {'numeric'}, ...
+        {'vector', 'numel', 2, 'real', 'finite', 'integer', 'positive'}, ...
+        mfilename, 'options.outputResolution');
+    if ~isempty(options.interpolationResolution)
+        validateattributes(options.interpolationResolution, {'numeric'}, ...
+            {'vector', 'numel', 2, 'real', 'finite', 'integer', 'positive'}, ...
+            mfilename, 'options.interpolationResolution');
+        if any(options.interpolationResolution < 2)
+            error([mfilename, ':InterpolationResolutionTooSmall'], ...
+                'Each interpolation resolution must be at least 2.');
+        end
+    end
+    if ~((ischar(options.outputDirectory) && ...
+            (isrow(options.outputDirectory) || isempty(options.outputDirectory))) || ...
+            (isstring(options.outputDirectory) && isscalar(options.outputDirectory)))
+        error([mfilename, ':InvalidOutputDirectory'], ...
+            'options.outputDirectory must be a character vector or string scalar.');
+    end
+    validateattributes(options.frameRate, {'numeric'}, ...
+        {'scalar', 'real', 'finite', 'positive'}, mfilename, 'options.frameRate');
+    validateattributes(options.maxNumStepsPerBatch, {'numeric'}, ...
+        {'scalar', 'real', 'finite', 'integer', 'positive'}, ...
+        mfilename, 'options.maxNumStepsPerBatch');
 end
 
 function style = getAnimationStyle(figPosition)

@@ -4,9 +4,10 @@ function showUphiStreamAnimation4Views(dns, timeWindow, outputResolution, ...
 % one DNS case.
 %
 % Usage:
-%   showUphiAnimation4Views(dns, timeWindow, outputResolution)
-%   showUphiAnimation4Views(dns, timeWindow, outputResolution, storePath)
-%   showUphiAnimation4Views(dns, timeWindow, outputResolution, storePath, frameRate)
+%   showUphiStreamAnimation4Views(dns, timeWindow, outputResolution)
+%   showUphiStreamAnimation4Views(dns, timeWindow, outputResolution, storePath)
+%   showUphiStreamAnimation4Views(dns, timeWindow, outputResolution, ...
+%       storePath, frameRate)
 %
 % Inputs:
 %   dns              DNS structure created by setDnsCase/setAsmCase.
