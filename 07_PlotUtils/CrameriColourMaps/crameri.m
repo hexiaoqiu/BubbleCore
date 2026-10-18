@@ -59,14 +59,17 @@ function cmap = crameri(ColormapName,varargin)
 
 %% Display colormap options: 
 
+% 配套资源始终从本函数目录读取，避免当前目录同名文件造成遮蔽。
+resourceDirectory = fileparts(mfilename('fullpath'));
+
 if nargin==0
    figure('menubar','none','numbertitle','off','Name','crameri options:')
    
    if license('test','image_toolbox')
-      imshow(imread('crameri7.0.png')); 
+      imshow(imread(fullfile(resourceDirectory,'crameri7.0.png')));
    else
       axes('pos',[0 0 1 1])
-      image(imread('crameri7.0.png')); 
+      image(imread(fullfile(resourceDirectory,'crameri7.0.png')));
       axis image off
    end
    
@@ -124,7 +127,7 @@ end
 %% Load RGB values and interpolate to NLevels: 
 
 try
-   S = load('CrameriColourMaps7.0.mat',ColormapName); 
+   S = load(fullfile(resourceDirectory,'CrameriColourMaps7.0.mat'),ColormapName);
    cmap = S.(ColormapName); 
 catch
    error(['Unknown colormap name ''',ColormapName,'''. Try typing crameri with no inputs to check the options and try again.'])

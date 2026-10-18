@@ -1,4 +1,8 @@
 # BubblePostProcessLib
+
+Crameri科学色图库现位于`07_PlotUtils/CrameriColourMaps`，与数据及许可证一起维护。
+与BubblePlus联合使用时，运行其`setupBubblePlusPath`即可配置；不再从`plotRelated`加载色图库。
+
 2023/03/23
 求半球面上场量的三维笛卡尔空间梯度都使用getGrad函数，它的位置在
 BubbleProcessLib\GradientRelated\
