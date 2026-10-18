@@ -1,42 +1,19 @@
 function allCaseDirList = getSecondLevelFolders(rootDir)
-%GETSECONDLEVELFOLDERS 获取指定目录下所有第二级文件夹的完整路径
-%
-% 输入：
-%   rootDir - 根目录，例如：
-%       '/Volumes/G-DRIVE PRO/DNS_Data/SpotsOnBubble/'
-%
-% 输出：
-%   allCaseDirList - 包含所有第二级文件夹完整路径的列 cell 数组。
-%                    第二级文件夹自身名称包含 "readme"（忽略大小写）
-%                    时会被排除；上级目录名称不参与判断。
+%GETSECONDLEVELFOLDERS 获取指定目录下全部合规的第二级文件夹完整路径。
+%   返回列cell数组。rootDir以下任一层目录名称包含readme（忽略大小写），
+%   就排除该目录及其全部后代；rootDir本身及其上级路径不参与检查。
 
     arguments
         rootDir (1, :) char
     end
 
-    if ~isfolder(rootDir)
-        error('指定的根目录不存在：%s', rootDir);
+    %% 先取得已逐层筛选的上一级目录，不进入被排除的分支
+    parentDirectories = getFirstLevelFolders(rootDir);
+    allCaseDirList = cell(0,1);
+
+    %% 仅遍历合规父目录的直接子目录，保持精确层级
+    for index = 1:numel(parentDirectories)
+        childDirectories = getFirstLevelFolders(parentDirectories{index});
+        allCaseDirList = [allCaseDirList;childDirectories]; %#ok<AGROW> 按目录分支累加路径，不读取流场
     end
-
-    % 获取第二级目录：
-    % rootDir/第一级/第二级
-    folderInfo = dir(fullfile(rootDir, '*', '*'));
-
-    % 仅保留文件夹，并排除 "." 和 ".."
-    folderInfo = folderInfo([folderInfo.isdir]);
-    folderInfo = folderInfo(~ismember({folderInfo.name}, {'.', '..'}));
-
-    % 只检查目标文件夹自身的名称，不检查其完整路径
-    containsReadme = contains( ...
-        {folderInfo.name}, 'readme', 'IgnoreCase', true);
-    folderInfo(containsReadme) = [];
-
-    % 组合成完整路径，并存入列 cell 数组
-    allCaseDirList = arrayfun( ...
-        @(item) fullfile(item.folder, item.name), ...
-        folderInfo, ...
-        'UniformOutput', false ...
-    );
-
-    allCaseDirList = allCaseDirList(:);
 end
