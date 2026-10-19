@@ -1,34 +1,21 @@
 % Author: Xiaoqiu HE
-% Purpose: Find the level 2 folders which is supposed to contain raw data.
-
 function [numCase, allCaseRawList] = getCaseRawDir(rawRoot)
-    subdir = dir(rawRoot);
-    k = 0;
-    for i = 1:length(subdir)
-        if( isequal(subdir(i).name, '.') || ...,
-            isequal(subdir(i).name, '..') || ...,
-            ~subdir(i).isdir )
-            continue;
-        else
-            k = k+1;
-            subPathLevel0{k,1} = fullfile(rawRoot,subdir(i).name);
-        end
-    end
+%GETCASERAWDIR 返回根目录下合规的直接子目录数量和路径列cell。
+% 实际搜索深度为一级；保持dir顺序，不进行子case数值排序。
+% 只检查rawRoot以下子目录名，包含readme（忽略大小写）就排除整个分支。
+% rawRoot自身及其上级名称不参与检查。
 
-%     m = 0;
-%     for i = 1:k
-%         subdir2 = dir(subPathLevel0{i});
-%         for j = 1:length(subdir2)
-%             if( isequal(subdir2(j).name, '.') || ...,
-%                 isequal(subdir2(j).name, '..') || ...,
-%                 ~subdir2(j).isdir )
-%                 continue;
-%             else
-%                 m = m+1;
-%                 subPathLevel1{m,1} = fullfile(subPathLevel0{i},subdir2(j).name);
-%             end
-%         end
-%     end
-    numCase = k;
-    allCaseRawList = subPathLevel0;
+    % 显式排除普通文件、点目录和readme子目录。
+    subdir = dir(rawRoot);
+    names = {subdir.name};
+    isDotDir = ismember(names, {'.', '..'});
+    isReadMe = contains(names, 'readme', 'IgnoreCase', true);
+    subdir = subdir([subdir.isdir] & ~isDotDir & ~isReadMe);
+
+    % 保留相对输入对应相对输出的约定；空目录返回0和0×1 cell。
+    numCase = numel(subdir);
+    allCaseRawList = cell(numCase, 1);
+    for i = 1:numCase
+        allCaseRawList{i,1} = fullfile(rawRoot, subdir(i).name);
+    end
 end
